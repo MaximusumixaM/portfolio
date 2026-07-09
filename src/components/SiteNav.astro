@@ -1,0 +1,63 @@
+---
+export interface NavItem {
+  id: string;
+  label: string;
+}
+
+const items: NavItem[] = [
+  { id: "projects", label: "Projects" },
+  { id: "about", label: "About" },
+];
+---
+
+<nav class="site-nav" aria-label="Primary">
+  {
+    items.map((item, index) => (
+      <button
+        type="button"
+        class="site-nav__item"
+        data-view-target={item.id}
+        aria-pressed={index === 0 ? "true" : "false"}
+      >
+        {item.label}
+      </button>
+    ))
+  }
+</nav>
+
+<style>
+  .site-nav {
+    display: flex;
+    gap: 2rem;
+    padding: 2rem 1.5rem 0;
+  }
+
+  .site-nav__item {
+    font-family: "Futura", Helvetica, sans-serif;
+    font-size: 1rem;
+    background: none;
+    border: none;
+    color: #000;
+    cursor: pointer;
+    padding: 0 0 0.25rem;
+    position: relative;
+  }
+
+  .site-nav__item::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+    background: #000;
+    transform: scaleX(0);
+    transform-origin: bottom left;
+    transition: transform 0.3s ease-out;
+  }
+
+  .site-nav__item:hover::after,
+  .site-nav__item[aria-pressed="true"]::after {
+    transform: scaleX(1);
+  }
+</style>
