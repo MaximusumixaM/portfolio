@@ -1,3 +1,11 @@
+## About this project
+
+Max Nobell-Cluff is an interaction desginer, and this is his website — part personal site, part design portfolio. See `.claude/rules/` for the coding conventions being layered in as the project grows.
+
+The current content/structure (imported from an old site) is throwaway scaffolding used to exercise the dev pipeline — expect it to be substantially revamped, don't treat it as a model to preserve or extend from.
+
+Target stack: Astro, TypeScript, React (via `@astrojs/react`) for interactive pieces, Tailwind, and a token-based design system named **Peduncle** (see `.claude/rules/design-system.md` — none of it exists yet; that file documents the target architecture to build toward).
+
 ## Development
 
 When starting the dev server, use background mode:
