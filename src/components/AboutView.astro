@@ -5,13 +5,13 @@ import { bio, awards, socialLinks } from "../data/site";
 
 <div class="about">
   <div class="about__text">
-    <h1 class="about__header">Max Nobell-Cluff</h1>
-    <h2 class="about__label">Bio</h2>
-    <p class="about__body">{bio}</p>
-    <h2 class="about__label">Awards</h2>
+    <h1 class="about__header font-display text-xl">Max Nobell-Cluff</h1>
+    <h2 class="about__label font-display text-large">Bio</h2>
+    <p class="about__body font-display text-large">{bio}</p>
+    <h2 class="about__label font-display text-large">Awards</h2>
     {
       awards.map((award) => (
-        <p class="about__body">
+        <p class="about__body font-display text-large">
           {award.date}: {award.title}
           <br />- {award.description}
         </p>
@@ -46,21 +46,15 @@ import { bio, awards, socialLinks } from "../data/site";
   }
 
   .about__header {
-    font-family: "Norms", Helvetica, sans-serif;
-    font-size: 1.4rem;
     margin-bottom: 1.5rem;
   }
 
   .about__label {
-    font-family: "Norms", Helvetica, sans-serif;
-    font-size: 1rem;
     margin-top: 1.5rem;
     margin-bottom: 0.5rem;
   }
 
   .about__body {
-    font-family: "Norms", Helvetica, sans-serif;
-    font-size: 1rem;
     line-height: 1.3;
   }
 

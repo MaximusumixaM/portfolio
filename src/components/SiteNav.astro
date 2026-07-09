@@ -15,7 +15,7 @@ const items: NavItem[] = [
     items.map((item, index) => (
       <button
         type="button"
-        class="site-nav__item"
+        class="site-nav__item font-sans text-large text-foreground-default"
         data-view-target={item.id}
         aria-pressed={index === 0 ? "true" : "false"}
       >
@@ -33,11 +33,8 @@ const items: NavItem[] = [
   }
 
   .site-nav__item {
-    font-family: "Futura", Helvetica, sans-serif;
-    font-size: 1rem;
     background: none;
     border: none;
-    color: #000;
     cursor: pointer;
     padding: 0 0 0.25rem;
     position: relative;
@@ -50,7 +47,7 @@ const items: NavItem[] = [
     bottom: 0;
     width: 100%;
     height: 3px;
-    background: #000;
+    background: var(--color-foreground-default);
     transform: scaleX(0);
     transform-origin: bottom left;
     transition: transform 0.3s ease-out;

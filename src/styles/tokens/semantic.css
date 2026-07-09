@@ -1,0 +1,43 @@
+/* Theme-aware roles mapped to base.css values; light is :root, dark overrides via prefers-color-scheme. */
+
+:root {
+  /* background */
+  --theme-bg-default: var(--neutral-50);
+  --theme-bg-default-hover: var(--neutral-100);
+  --theme-bg-accent-default: var(--blue-600);
+  --theme-bg-accent-hover: var(--blue-700);
+
+  /* foreground */
+  --theme-fg-default: var(--neutral-950);
+  --theme-fg-default-hover: var(--neutral-700);
+  --theme-fg-accent-default: var(--blue-600);
+  --theme-fg-on-accent: var(--neutral-50);
+
+  /* border */
+  --theme-border-default: var(--neutral-200);
+  --theme-border-strong: var(--neutral-400);
+  --theme-border-accent: var(--blue-600);
+  --theme-border-focus: var(--blue-600);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* background */
+    --theme-bg-default: var(--neutral-950);
+    --theme-bg-default-hover: var(--neutral-900);
+    --theme-bg-accent-default: var(--blue-600);
+    --theme-bg-accent-hover: var(--blue-500);
+
+    /* foreground */
+    --theme-fg-default: var(--neutral-50);
+    --theme-fg-default-hover: var(--neutral-300);
+    --theme-fg-accent-default: var(--blue-400);
+    --theme-fg-on-accent: var(--neutral-50);
+
+    /* border */
+    --theme-border-default: var(--neutral-800);
+    --theme-border-strong: var(--neutral-600);
+    --theme-border-accent: var(--blue-400);
+    --theme-border-focus: var(--blue-400);
+  }
+}

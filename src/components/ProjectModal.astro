@@ -3,10 +3,10 @@ import { Image } from "astro:assets";
 import { projects } from "../data/projects";
 ---
 
-<dialog class="project-modal" data-project-modal>
+<dialog class="project-modal bg-background-default text-foreground-default" data-project-modal>
   <button
     type="button"
-    class="project-modal__close"
+    class="project-modal__close text-xxl text-foreground-default"
     data-modal-close
     aria-label="Close project details"
   >
@@ -16,13 +16,13 @@ import { projects } from "../data/projects";
     projects.map((project) => (
       <article class="project-detail" data-project-panel={project.slug} hidden>
         <div class="project-detail__text">
-          <h2>{project.title}</h2>
-          <h3>About</h3>
-          <p>{project.about}</p>
+          <h2 class="font-display text-xl">{project.title}</h2>
+          <h3 class="font-display text-large">About</h3>
+          <p class="font-display text-large">{project.about}</p>
           {project.notes.map((note) => (
             <>
-              <h3>{note.label}</h3>
-              <p>{note.text}</p>
+              <h3 class="font-display text-large">{note.label}</h3>
+              <p class="font-display text-large">{note.text}</p>
             </>
           ))}
         </div>
@@ -57,11 +57,10 @@ import { projects } from "../data/projects";
     height: 100vh;
     max-width: 100vw;
     max-height: 100vh;
-    background: #fff;
   }
 
   .project-modal::backdrop {
-    background: rgba(0, 0, 0, 0.4);
+    background: rgb(0 0 0 / 40%);
   }
 
   .project-modal__close {
@@ -69,12 +68,10 @@ import { projects } from "../data/projects";
     top: 0.5rem;
     right: 1rem;
     z-index: 10;
-    font-size: 3rem;
     line-height: 1;
     background: none;
     border: none;
     cursor: pointer;
-    color: #000;
   }
 
   .project-detail[hidden] {
@@ -91,15 +88,11 @@ import { projects } from "../data/projects";
   }
 
   .project-detail__text h2 {
-    font-family: "Norms", Helvetica, sans-serif;
-    font-size: 1.4rem;
     margin-top: 0;
   }
 
   .project-detail__text h3,
   .project-detail__text p {
-    font-family: "Norms", Helvetica, sans-serif;
-    font-size: 1rem;
     line-height: 1.3;
   }
 

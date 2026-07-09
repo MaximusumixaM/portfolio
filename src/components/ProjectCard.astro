@@ -11,7 +11,7 @@ const { project } = Astro.props;
 
 <button
   type="button"
-  class="project-card"
+  class="project-card bg-background-default-hover"
   data-project-slug={project.slug}
   aria-haspopup="dialog"
 >
@@ -22,7 +22,9 @@ const { project } = Astro.props;
     widths={[320, 480, 640]}
     sizes="(max-width: 767px) 30vw, 17vw"
   />
-  <span class="project-card__title">{project.title}</span>
+  <span class="project-card__title font-sans text-xl text-foreground-on-accent">
+    {project.title}
+  </span>
 </button>
 
 <style>
@@ -31,8 +33,7 @@ const { project } = Astro.props;
     aspect-ratio: 1 / 1;
     padding: 0;
     border: none;
-    box-shadow: 0 0 7px grey;
-    background-color: grey;
+    box-shadow: 0 0 7px var(--color-border-strong);
     cursor: pointer;
     overflow: hidden;
   }
@@ -50,9 +51,6 @@ const { project } = Astro.props;
   }
 
   .project-card__title {
-    font-family: "Futura", Helvetica, sans-serif;
-    font-size: 1.5rem;
-    color: #fff;
     position: absolute;
     left: -10px;
     top: 0;
