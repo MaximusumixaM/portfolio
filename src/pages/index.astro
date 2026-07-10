@@ -1,26 +1,26 @@
 ---
-import AboutView from "../components/AboutView.astro";
-import ProjectGrid from "../components/ProjectGrid.astro";
-import ProjectModal from "../components/ProjectModal.astro";
-import SiteNav from "../components/SiteNav.astro";
+import exposeGif from "../assets/images/about/expose.gif";
+import { PortfolioApp } from "../components/app/PortfolioApp";
+import { projects } from "../data/projects";
+import { resolveProjects } from "../data/resolve-project-images";
+import { bio, awards, socialLinks } from "../data/site";
 import Layout from "../layouts/Layout.astro";
+
+const resolvedProjects = await resolveProjects(projects);
+const resolvedSocialLinks = socialLinks.map((link) => ({
+  label: link.label,
+  href: link.href,
+  iconSrc: link.icon.src,
+}));
 ---
 
 <Layout>
-  <SiteNav />
-  <main>
-    <section data-view-panel="projects">
-      <ProjectGrid />
-      <ProjectModal />
-    </section>
-    <section data-view-panel="about" hidden>
-      <AboutView />
-    </section>
-  </main>
+  <PortfolioApp
+    client:load
+    projects={resolvedProjects}
+    bio={bio}
+    awards={awards}
+    socialLinks={resolvedSocialLinks}
+    photoSrc={exposeGif.src}
+  />
 </Layout>
-
-<script>
-  import { initSite } from "../scripts/site";
-
-  initSite();
-</script>
