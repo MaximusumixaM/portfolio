@@ -1,35 +1,30 @@
 import type { ImageMetadata } from "astro";
 
-import adonisThumb from "../assets/images/projects/adonis-thumb.png";
-import adonis1 from "../assets/images/projects/adonis-1.png";
-import adonis2 from "../assets/images/projects/adonis-2.png";
-import adonis3 from "../assets/images/projects/adonis-3.png";
-
-import musicLicensingThumb from "../assets/images/projects/music-licensing-thumb.png";
-import musicLicensing1 from "../assets/images/projects/music-licensing-1.png";
-import musicLicensing2 from "../assets/images/projects/music-licensing-2.png";
-import musicLicensing3 from "../assets/images/projects/music-licensing-3.png";
-import musicLicensing4 from "../assets/images/projects/music-licensing-4.png";
-import musicLicensing5 from "../assets/images/projects/music-licensing-5.png";
-
-import modelingThumb from "../assets/images/projects/3d-modeling-thumb.png";
 import modeling1 from "../assets/images/projects/3d-modeling-1.png";
 import modeling2 from "../assets/images/projects/3d-modeling-2.png";
 import modeling3 from "../assets/images/projects/3d-modeling-3.png";
 import modeling4 from "../assets/images/projects/3d-modeling-4.png";
 import modeling5 from "../assets/images/projects/3d-modeling-5.png";
-
-import icrewThumb from "../assets/images/projects/icrew-thumb.png";
+import modelingThumb from "../assets/images/projects/3d-modeling-thumb.png";
+import adonis1 from "../assets/images/projects/adonis-1.png";
+import adonis2 from "../assets/images/projects/adonis-2.png";
+import adonis3 from "../assets/images/projects/adonis-3.png";
+import adonisThumb from "../assets/images/projects/adonis-thumb.png";
+import gradProject1 from "../assets/images/projects/grad-project-1.png";
+import gradProjectThumb from "../assets/images/projects/grad-project-thumb.png";
 import icrew1 from "../assets/images/projects/icrew-1.png";
 import icrew2 from "../assets/images/projects/icrew-2.png";
 import icrew3 from "../assets/images/projects/icrew-3.png";
-
-import roboSwarmThumb from "../assets/images/projects/robo-swarm-thumb.png";
+import icrewThumb from "../assets/images/projects/icrew-thumb.png";
+import musicLicensing1 from "../assets/images/projects/music-licensing-1.png";
+import musicLicensing2 from "../assets/images/projects/music-licensing-2.png";
+import musicLicensing3 from "../assets/images/projects/music-licensing-3.png";
+import musicLicensing4 from "../assets/images/projects/music-licensing-4.png";
+import musicLicensing5 from "../assets/images/projects/music-licensing-5.png";
+import musicLicensingThumb from "../assets/images/projects/music-licensing-thumb.png";
 import roboSwarm1 from "../assets/images/projects/robo-swarm-1.png";
 import roboSwarm2 from "../assets/images/projects/robo-swarm-2.png";
-
-import gradProjectThumb from "../assets/images/projects/grad-project-thumb.png";
-import gradProject1 from "../assets/images/projects/grad-project-1.png";
+import roboSwarmThumb from "../assets/images/projects/robo-swarm-thumb.png";
 
 export interface ProjectDetailImage {
   src: ImageMetadata;

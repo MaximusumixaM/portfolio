@@ -1,7 +1,8 @@
+import type { ImageMetadata } from "astro";
+
+import instagramIcon from "../assets/images/social/instagram.png";
 import linkedinIcon from "../assets/images/social/linkedin.png";
 import vimeoIcon from "../assets/images/social/vimeo.png";
-import instagramIcon from "../assets/images/social/instagram.png";
-import type { ImageMetadata } from "astro";
 
 export interface SocialLink {
   label: string;
