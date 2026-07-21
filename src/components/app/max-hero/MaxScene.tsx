@@ -1,32 +1,51 @@
 import { Environment, Lightformer } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
+import { useState } from "react";
 
-import { HeroHud } from "./HeroHud";
 import { MaxWordmark } from "./MaxWordmark";
 
+import { cn } from "@/components/lib/utils";
+
 /**
- * Fullscreen 3D hero: the MAX wordmark as a living, flexing faceted material.
- * Rendered as a `client:only` island (touches WebGL/window, so it must skip SSR).
- * The existing portfolio flows directly beneath it — native scroll (or the HUD's
- * "Enter" cue) carries you down into the site.
+ * The WebGL half of the hero. Mounted `client:only` (it touches WebGL/window, so it
+ * can't be server-rendered); the surrounding section and HUD are server-rendered in
+ * MaxHero.astro so the viewport-height space is reserved before this ever loads.
+ *
+ * The fixed positioning lives on a wrapper, not on <Canvas>: r3f sets `position: relative`
+ * as an inline style on its own container, which beats any Tailwind class we put there.
+ * Fixed (rather than absolute) is what lets the wordmark persist as the nav logo once the
+ * hero has scrolled past, and pointer-events-none stops it swallowing clicks page-wide.
  */
-export function MaxHero() {
+export function MaxScene() {
+  const [isReady, setIsReady] = useState(false);
+
   return (
-    <section className="relative h-screen w-full overflow-hidden bg-background-default">
+    <div
+      className={cn(
+        "pointer-events-none fixed inset-0 z-30 transition-opacity duration-700",
+        isReady ? "opacity-100" : "opacity-0",
+      )}
+    >
       <Canvas
-        className="absolute inset-0"
         camera={{ position: [0, 0, 9], fov: 40 }}
         gl={{ antialias: true, alpha: true }}
         dpr={[1, 2]}
+        onCreated={() => {
+          setIsReady(true);
+        }}
       >
         <ambientLight intensity={0.35} />
         <directionalLight position={[4, 5, 6]} intensity={1.4} />
-        <directionalLight position={[-6, -2, 2]} intensity={0.4} color="#6a8cff" />
+        <directionalLight
+          position={[-6, -2, 2]}
+          intensity={0.4}
+          color="#6a8cff"
+        />
 
         <MaxWordmark />
 
         {/* Procedural studio environment (no CDN fetch): soft key + rim + colored accents
-            give the clearcoat real specular highlights and reflections. */}
+          give the clearcoat real specular highlights and reflections. */}
         <Environment resolution={256}>
           <Lightformer
             intensity={2.2}
@@ -54,8 +73,6 @@ export function MaxHero() {
           />
         </Environment>
       </Canvas>
-
-      <HeroHud />
-    </section>
+    </div>
   );
 }

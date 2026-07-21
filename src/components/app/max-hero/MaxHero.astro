@@ -1,0 +1,26 @@
+---
+// The hero is pinned: the track below is taller than the viewport, and the section inside
+// it sticks to the top, so the page scrolls while the hero holds still and the wordmark
+// animates into the nav. Scroll releases to normal once the track ends.
+//
+// MaxScene sits outside the track deliberately — it's fixed, and any transformed or
+// pinned ancestor would make it resolve against that ancestor instead of the viewport.
+import { HeroHud } from "./HeroHud";
+import { HeroScrollController } from "./HeroScrollController";
+import { HERO_TRACK_ID } from "./heroTransition";
+import { MaxScene } from "./MaxScene";
+import { NavPill } from "./NavPill";
+---
+
+<MaxScene client:only="react" />
+<HeroScrollController client:only="react" />
+
+<div id={HERO_TRACK_ID} class="relative h-[200vh] w-full">
+  <section
+    class="sticky top-0 h-screen w-full overflow-hidden bg-background-default"
+  >
+    <HeroHud client:load />
+  </section>
+</div>
+
+<NavPill client:load />

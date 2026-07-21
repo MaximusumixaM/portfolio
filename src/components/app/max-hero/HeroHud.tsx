@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
+import {
+  PORTFOLIO_ID,
+  scrollToElement,
+  useHeroProgress,
+} from "./heroTransition";
+
 import { Button } from "@/components/peduncle/Button";
 import { Helper } from "@/components/peduncle/Typography";
 
@@ -18,9 +24,7 @@ function formatAngle(value: number): string {
 }
 
 function scrollToPortfolio() {
-  document
-    .getElementById("portfolio")
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  scrollToElement(PORTFOLIO_ID);
 }
 
 /** Live pointer-driven azimuth/elevation, throttled to one update per frame. */
@@ -35,7 +39,10 @@ function usePointerReadout(): Readout {
         frame.current = null;
         const x = (event.clientX / window.innerWidth) * 2 - 1;
         const y = -((event.clientY / window.innerHeight) * 2 - 1);
-        setReadout({ azimuth: x * AZIMUTH_RANGE, elevation: y * ELEVATION_RANGE });
+        setReadout({
+          azimuth: x * AZIMUTH_RANGE,
+          elevation: y * ELEVATION_RANGE,
+        });
       });
     }
     window.addEventListener("pointermove", handleMove);
@@ -50,9 +57,16 @@ function usePointerReadout(): Readout {
 
 export function HeroHud() {
   const { azimuth, elevation } = usePointerReadout();
+  const progress = useHeroProgress();
+  // The hero chrome clears out ahead of the wordmark reaching the nav.
+  const opacity = Math.max(0, 1 - progress * 1.8);
 
   return (
-    <div className="pointer-events-none absolute inset-0 select-none p-m">
+    <div
+      className="pointer-events-none absolute inset-0 z-40 select-none p-m"
+      style={{ opacity }}
+      aria-hidden={opacity === 0}
+    >
       <h1 className="visually-hidden">
         Max Nobell-Cluff — interaction designer
       </h1>
@@ -81,7 +95,9 @@ export function HeroHud() {
           <Helper className="font-mono text-xs">EL</Helper>
         </dt>
         <dd>
-          <Helper className="font-mono text-xs">{formatAngle(elevation)}</Helper>
+          <Helper className="font-mono text-xs">
+            {formatAngle(elevation)}
+          </Helper>
         </dd>
       </dl>
 

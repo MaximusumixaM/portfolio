@@ -25,9 +25,12 @@ const WORDMARK_HEIGHT = 3.4;
 const DEPTH_RATIO = 0.19;
 /** Corner-fillet radius, in SVG units — the outline is drawn sharp, rounding happens here. */
 const CORNER_RADIUS = 24;
-/** Max facet edge length in world units — drives how dense the flexing mesh is. */
-const MAX_EDGE_LENGTH = 0.08;
-const TESSELLATE_ITERATIONS = 8;
+/**
+ * Max facet edge length in world units — drives how dense the flexing mesh is.
+ * Triangle count scales with 1/MAX_EDGE_LENGTH², so doubling this quarters the count.
+ */
+const MAX_EDGE_LENGTH = 0.64;
+const TESSELLATE_ITERATIONS = 6;
 /** Wordmark SVG viewBox height, in SVG units. */
 const SVG_HEIGHT = 389;
 
@@ -73,8 +76,12 @@ function drawRoundedContour(
   const exits: THREE.Vector2[] = [];
   for (let i = 0; i < count; i++) {
     const current = at(points, i);
-    const toPrev = at(points, i - 1).clone().sub(current);
-    const toNext = at(points, i + 1).clone().sub(current);
+    const toPrev = at(points, i - 1)
+      .clone()
+      .sub(current);
+    const toNext = at(points, i + 1)
+      .clone()
+      .sub(current);
     const r = Math.min(radius, toPrev.length() / 2, toNext.length() / 2);
     entries.push(current.clone().addScaledVector(toPrev.normalize(), r));
     exits.push(current.clone().addScaledVector(toNext.normalize(), r));
@@ -105,7 +112,10 @@ function roundShapes(path: THREE.ShapePath, radius: number): THREE.Shape[] {
   });
 }
 
-function extrudeLetter(path: THREE.ShapePath, depth: number): THREE.ExtrudeGeometry {
+function extrudeLetter(
+  path: THREE.ShapePath,
+  depth: number,
+): THREE.ExtrudeGeometry {
   return new THREE.ExtrudeGeometry(roundShapes(path, CORNER_RADIUS), {
     depth,
     bevelEnabled: true,
@@ -125,7 +135,10 @@ function extrudeLetter(path: THREE.ShapePath, depth: number): THREE.ExtrudeGeome
  */
 export function buildWordmark(): Wordmark {
   const depth = SVG_HEIGHT * DEPTH_RATIO;
-  const tessellate = new TessellateModifier(MAX_EDGE_LENGTH, TESSELLATE_ITERATIONS);
+  const tessellate = new TessellateModifier(
+    MAX_EDGE_LENGTH,
+    TESSELLATE_ITERATIONS,
+  );
 
   const { paths } = new SVGLoader().parse(maxWordmarkSvg);
 
@@ -135,7 +148,8 @@ export function buildWordmark(): Wordmark {
     geometry.scale(1, -1, 1);
     geometry.computeBoundingBox();
     const box = geometry.boundingBox;
-    if (box === null) throw new Error("Expected extruded geometry to have a bounding box");
+    if (box === null)
+      throw new Error("Expected extruded geometry to have a bounding box");
     return {
       id: LETTER_IDS[index] ?? `letter-${String(index)}`,
       geometry,
@@ -165,7 +179,7 @@ export function buildWordmark(): Wordmark {
     return {
       id,
       geometry: dense,
-      position: [letterCenter.x, letterCenter.y, (LETTER_Z_OFFSET[id] ?? 0)],
+      position: [letterCenter.x, letterCenter.y, LETTER_Z_OFFSET[id] ?? 0],
     } satisfies LetterGeometry;
   });
 

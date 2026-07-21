@@ -17,18 +17,28 @@ export interface FlexUniforms {
   uSeed: { value: number };
   uAmplitude: { value: number };
   uNoiseScale: { value: number };
+  /** 0 = full living hero material, 1 = flat settled logo (see heroTransition). */
+  uFlatten: { value: number };
 }
 
 export interface FlexMaterial extends THREE.MeshPhysicalMaterial {
   userData: { flexUniforms: FlexUniforms };
 }
 
-// Cyclic cosine gradient (Inigo Quilez). Cool blue → violet → cyan sweep; art-directed
-// placeholder — retune these four vec3s when there's a real brand direction.
-const GRADIENT_A = "vec3(0.52, 0.45, 0.62)";
-const GRADIENT_B = "vec3(0.45, 0.42, 0.45)";
+// Cyclic cosine gradient (Inigo Quilez): color(t) = A + B * cos(2pi * (C*t + D)).
+// Crimson family — sweeps bright crimson → deep red → near-black blood red → mid crimson.
+// Green is kept low throughout (green + red is what reads as orange), and blue's phase
+// sits close to red's so it falls off with red rather than lingering into purple.
+const GRADIENT_A = "vec3(0.60, 0.075, 0.14)";
+const GRADIENT_B = "vec3(0.30, 0.060, 0.10)";
 const GRADIENT_C = "vec3(1.0, 1.0, 1.0)";
-const GRADIENT_D = "vec3(0.12, 0.30, 0.62)";
+const GRADIENT_D = "vec3(0.00, 0.06, 0.10)";
+/**
+ * The settled logo colour the gradient collapses to at full flatten — a warm flag red
+ * (~#D52B1E in linear space). Green sits just above blue on purpose: blue-over-green is
+ * what tips a red toward pink, so the warm lean is what keeps it from reading crimson.
+ */
+const FLAT_COLOR = "vec3(0.66, 0.026, 0.014)";
 
 /** Ashima 3D simplex noise (webgl-noise), returns roughly [-1, 1]. */
 const SIMPLEX_3D = /* glsl */ `
@@ -85,6 +95,7 @@ uniform float uTime;
 uniform float uSeed;
 uniform float uAmplitude;
 uniform float uNoiseScale;
+uniform float uFlatten;
 varying float vFlexNoise;
 varying vec3 vFlexObjPos;
 ${SIMPLEX_3D}
@@ -101,7 +112,7 @@ vec3 flexOffset = vec3(
   snoise(flexP + 37.73)
 );
 flexOffset.z *= 0.55; // keep the breathing mostly in-plane so depth layering stays crisp
-transformed += flexOffset * uAmplitude;
+transformed += flexOffset * uAmplitude * (1.0 - uFlatten); // settles rigid as it becomes the logo
 vFlexNoise = flexOffset.x;
 vFlexObjPos = position;
 `;
@@ -109,6 +120,7 @@ vFlexObjPos = position;
 const FRAGMENT_DECLARATIONS = /* glsl */ `
 uniform float uTime;
 uniform float uSeed;
+uniform float uFlatten;
 varying float vFlexNoise;
 varying vec3 vFlexObjPos;
 vec3 flexPalette(float t){
@@ -121,7 +133,9 @@ float flexT = fract(
   vFlexObjPos.y * 0.55 + vFlexObjPos.x * 0.18
   + uTime * 0.045 + uSeed * 0.13 + vFlexNoise * 0.35
 );
-diffuseColor.rgb = flexPalette(flexT);
+// Collapses to a single flat crimson as it settles, so the nav logo reads as a wordmark
+// rather than a shifting gradient.
+diffuseColor.rgb = mix(flexPalette(flexT), ${FLAT_COLOR}, uFlatten);
 `;
 
 export function createFlexMaterial(seed: number): FlexMaterial {
@@ -130,6 +144,7 @@ export function createFlexMaterial(seed: number): FlexMaterial {
     uSeed: { value: seed },
     uAmplitude: { value: 0.055 },
     uNoiseScale: { value: 0.95 },
+    uFlatten: { value: 0 },
   };
 
   const material = new THREE.MeshPhysicalMaterial({
@@ -149,10 +164,19 @@ export function createFlexMaterial(seed: number): FlexMaterial {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", `#include <common>\n${VERTEX_DECLARATIONS}`)
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${VERTEX_DISPLACEMENT}`);
+      .replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>\n${VERTEX_DISPLACEMENT}`,
+      );
     shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", `#include <common>\n${FRAGMENT_DECLARATIONS}`)
-      .replace("#include <color_fragment>", `#include <color_fragment>\n${FRAGMENT_COLOR}`);
+      .replace(
+        "#include <common>",
+        `#include <common>\n${FRAGMENT_DECLARATIONS}`,
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>\n${FRAGMENT_COLOR}`,
+      );
   };
   // Unique per seed so each letter compiles with its own seed uniform rather than
   // sharing a program (and thus a seed) with its siblings.

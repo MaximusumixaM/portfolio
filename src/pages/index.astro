@@ -1,6 +1,6 @@
 ---
 import exposeGif from "../assets/images/about/expose.gif";
-import { MaxHero } from "../components/app/max-hero/MaxHero";
+import MaxHero from "../components/app/max-hero/MaxHero.astro";
 import { PortfolioApp } from "../components/app/PortfolioApp";
 import { projects } from "../data/projects";
 import { resolveProjects } from "../data/resolve-project-images";
@@ -16,7 +16,7 @@ const resolvedSocialLinks = socialLinks.map((link) => ({
 ---
 
 <Layout>
-  <MaxHero client:only="react" />
+  <MaxHero />
   <div id="portfolio">
     <PortfolioApp
       client:load
