@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
+
 import { NAV_LOGO_HEIGHT_PX, useHeroProgress } from "./heroTransition";
 import { NavPillBorder } from "./NavPillBorder";
 
+import { HockeyGame } from "@/components/app/HockeyGame";
 import { cn } from "@/components/lib/utils";
 import { Button } from "@/components/peduncle/Button";
 import {
@@ -101,6 +103,7 @@ export function NavPill() {
               </Button>
             </DialogClose>
           </div>
+          <HockeyGame />
         </div>
       </DialogContent>
     </Dialog>
