@@ -1,32 +1,20 @@
-import { cva, type VariantProps } from "class-variance-authority";
-
 import { cn } from "@/components/lib/utils";
-
-const headingVariants = cva("font-display", {
-  variants: {
-    size: {
-      large: "text-xxl",
-      medium: "text-xl",
-      small: "text-large",
-    },
-  },
-  defaultVariants: { size: "medium" },
-});
 
 export type HeadingLevel = "h1" | "h2" | "h3";
 
-export type HeadingProps = React.ComponentProps<"h1"> &
-  VariantProps<typeof headingVariants> & { level: HeadingLevel };
+/** Headings are sized by their semantic level: h1 = 32px, h2 = 24px, h3 = 20px. */
+const HEADING_SIZE: Record<HeadingLevel, string> = {
+  h1: "text-heading-lg",
+  h2: "text-heading-md",
+  h3: "text-heading-sm",
+};
 
-export function Heading({
-  level,
-  size,
-  className,
-  ...props
-}: HeadingProps) {
+export type HeadingProps = React.ComponentProps<"h1"> & { level: HeadingLevel };
+
+export function Heading({ level, className, ...props }: HeadingProps) {
   const Tag = level;
   return (
-    <Tag className={cn(headingVariants({ size }), className)} {...props} />
+    <Tag className={cn("font-display", HEADING_SIZE[level], className)} {...props} />
   );
 }
 

@@ -47,7 +47,21 @@ const borderColors = [
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
-      "font-size": [{ text: ["xs", "small", "medium", "large", "xl", "xxl"] }],
+      "font-size": [
+        {
+          text: [
+            "xs",
+            "small",
+            "medium",
+            "large",
+            "xl",
+            "xxl",
+            "heading-lg",
+            "heading-md",
+            "heading-sm",
+          ],
+        },
+      ],
       rounded: [{ rounded: ["none", "small", "large", "xl", "xxl", "round"] }],
       "bg-color": [{ bg: backgroundColors }],
       "text-color": [{ text: foregroundColors }],

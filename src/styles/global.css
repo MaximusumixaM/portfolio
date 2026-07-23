@@ -43,6 +43,14 @@
   --text-xxl: 2.125rem; /* 34px */
   --text-xxl--line-height: 1.625rem; /* 26px */
 
+  /* Headings — sized by level (h1 → lg, h2 → md, h3 → sm) */
+  --text-heading-lg: 2rem; /* 32px — h1 */
+  --text-heading-lg--line-height: 2.5rem; /* 40px */
+  --text-heading-md: 1.5rem; /* 24px — h2 */
+  --text-heading-md--line-height: 2rem; /* 32px */
+  --text-heading-sm: 1.25rem; /* 20px — h3 */
+  --text-heading-sm--line-height: 1.75rem; /* 28px */
+
   /* Font weights */
   --font-weight-regular: 400;
   --font-weight-medium: 500;

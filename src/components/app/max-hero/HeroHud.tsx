@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/peduncle/Button";
 import { Helper } from "@/components/peduncle/Typography";
 
-/** Peak parallax angles (degrees) surfaced in the readout — mirrors MaxWordmark's rotation. */
+/** Peak parallax angles (degrees) surfaced in the readout — mirrors HeroStage's rotation. */
 const AZIMUTH_RANGE = 19.5;
 const ELEVATION_RANGE = 11.5;
 

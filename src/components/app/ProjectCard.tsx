@@ -27,7 +27,6 @@ export function ProjectCard({ project, onSelect }: ProjectCardProps) {
       />
       <Heading
         level="h3"
-        size="small"
         className="absolute top-0 left-[-10px] z-[2] text-foreground-on-accent opacity-0 transition-all duration-300 group-hover:left-[20px] group-hover:opacity-100"
       >
         {project.title}

@@ -23,14 +23,14 @@ export function AboutView({
   return (
     <div className="grid grid-cols-1 items-start gap-l p-l md:grid-cols-2">
       <div>
-        <Heading level="h1" size="medium" className="mb-l">
+        <Heading level="h1" className="mb-l">
           Max Nobell-Cluff
         </Heading>
-        <Heading level="h2" size="small" className="mt-l mb-xs">
+        <Heading level="h2" className="mt-l mb-xs">
           Bio
         </Heading>
         <BodyText className="leading-snug">{bio}</BodyText>
-        <Heading level="h2" size="small" className="mt-l mb-xs">
+        <Heading level="h2" className="mt-l mb-xs">
           Awards
         </Heading>
         {awards.map((award) => (

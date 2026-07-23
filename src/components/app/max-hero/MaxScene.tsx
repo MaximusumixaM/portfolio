@@ -2,7 +2,7 @@ import { Environment, Lightformer } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useState } from "react";
 
-import { MaxWordmark } from "./MaxWordmark";
+import { HeroStage } from "./HeroStage";
 
 import { cn } from "@/components/lib/utils";
 
@@ -27,6 +27,10 @@ export function MaxScene() {
       )}
     >
       <Canvas
+        // r3f sets pointer-events:auto inline on its container, which overrides the
+        // wrapper's pointer-events-none and makes this full-viewport canvas eat every
+        // click on the page. Force it back to none so clicks pass through to the content.
+        style={{ pointerEvents: "none" }}
         camera={{ position: [0, 0, 9], fov: 40 }}
         gl={{ antialias: true, alpha: true }}
         dpr={[1, 2]}
@@ -42,7 +46,7 @@ export function MaxScene() {
           color="#6a8cff"
         />
 
-        <MaxWordmark />
+        <HeroStage />
 
         {/* Procedural studio environment (no CDN fetch): soft key + rim + colored accents
           give the clearcoat real specular highlights and reflections. */}

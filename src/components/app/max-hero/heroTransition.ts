@@ -20,21 +20,17 @@ export const PORTFOLIO_ID = "portfolio";
 export const NAV_LOGO_HEIGHT_PX = 32;
 
 /**
- * The pill's own box metrics, mirroring its Tailwind classes in NavPill: `top-m` (16px),
- * a 1px border, and `py-s` (8px). Kept here so the logo's resting centre is computed
- * rather than hand-tuned — otherwise resizing the logo silently misaligns the two.
- * If the pill's offset, border or padding classes change, update these to match.
+ * The pill's own box metrics, mirroring its Tailwind classes in NavPill: `top-m` (16px)
+ * and `py-s` (8px). The border is a non-layout SVG overlay (NavPillBorder), so it doesn't
+ * count here. Kept so the logo's resting centre is computed rather than hand-tuned —
+ * otherwise resizing the logo silently misaligns the two.
  */
 const NAV_PILL_TOP_PX = 16;
-const NAV_PILL_BORDER_PX = 1;
 const NAV_PILL_PADDING_Y_PX = 8;
 
 /** Vertical centre of the settled logo, in CSS pixels from the top of the viewport. */
 export const NAV_LOGO_CENTER_Y_PX =
-  NAV_PILL_TOP_PX +
-  NAV_PILL_BORDER_PX +
-  NAV_PILL_PADDING_Y_PX +
-  NAV_LOGO_HEIGHT_PX / 2;
+  NAV_PILL_TOP_PX + NAV_PILL_PADDING_Y_PX + NAV_LOGO_HEIGHT_PX / 2;
 
 let heroProgress = 0;
 const listeners = new Set<() => void>();
@@ -69,6 +65,29 @@ export function useHeroProgress(): number {
 /** Smoothstep, so the transform eases at both ends rather than tracking scroll linearly. */
 export function easeSettle(progress: number): number {
   return progress * progress * (3 - 2 * progress);
+}
+
+/**
+ * Sub-ranges of the 0–1 scroll that stage the hockey intro. Both the puck and the letters
+ * read these so the two stay locked to the same beats:
+ * - `arcs`   — four arcs sweep in from the cardinal points and close into a circle,
+ *              while the big MAX shrinks down onto what becomes the puck face.
+ * - `reveal` — the assembly tilts up to show the circle is a thin 3D puck, then flat again.
+ * - `rise`   — the puck (still a flat circle) travels up to the nav slot.
+ * - `morph`  — only once parked at the top: the circle opens out into the pill shape,
+ *              then the glassy DOM pill takes over.
+ */
+export const PUCK_PHASES = {
+  arcs: [0.0, 0.22],
+  reveal: [0.2, 0.42],
+  rise: [0.44, 0.7],
+  morph: [0.72, 0.94],
+} as const;
+
+/** Remaps `progress` to 0–1 across the given sub-range, clamped outside it. */
+export function phase(progress: number, [start, end]: readonly [number, number]): number {
+  if (end <= start) return progress >= end ? 1 : 0;
+  return Math.min(1, Math.max(0, (progress - start) / (end - start)));
 }
 
 /**

@@ -25,16 +25,14 @@ export function ProjectModal({ project, onOpenChange }: ProjectModalProps) {
           </DialogClose>
           <div className="grid h-full grid-cols-1 gap-l overflow-y-auto p-m pt-xl md:grid-cols-[minmax(220px,22vw)_1fr] md:p-l">
             <div>
-              <Heading level="h2" size="medium">
-                {project.title}
-              </Heading>
-              <Heading level="h3" size="small" className="mt-m mb-xs">
+              <Heading level="h2">{project.title}</Heading>
+              <Heading level="h3" className="mt-m mb-xs">
                 About
               </Heading>
               <BodyText className="leading-snug">{project.about}</BodyText>
               {project.notes.map((note) => (
                 <div key={note.label}>
-                  <Heading level="h3" size="small" className="mt-m mb-xs">
+                  <Heading level="h3" className="mt-m mb-xs">
                     {note.label}
                   </Heading>
                   <BodyText className="leading-snug">{note.text}</BodyText>
