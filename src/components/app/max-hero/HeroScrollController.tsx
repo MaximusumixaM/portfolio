@@ -10,14 +10,7 @@ import {
 } from "./heroTransition";
 import { usePrefersReducedMotion } from "./usePrefersReducedMotion";
 
-/**
- * Owns the page's scroll behaviour: Lenis for scroll feel, and a single ScrollTrigger
- * that converts progress through the hero track into the 0–1 value everything else reads.
- *
- * Renders nothing. The hero is pinned with CSS `sticky` rather than ScrollTrigger's `pin`
- * on purpose — pinning applies a transform to the pinned element, and a transformed
- * ancestor makes `position: fixed` resolve against it, which would break the canvas.
- */
+// Owns scroll: Lenis for feel + one ScrollTrigger emitting the 0–1 progress. Renders nothing; the hero is pinned via CSS `sticky` (ScrollTrigger's pin transform would break the fixed canvas).
 export function HeroScrollController() {
   const prefersReducedMotion = usePrefersReducedMotion();
 

@@ -1,10 +1,5 @@
 ---
-// The hero is pinned: the track below is taller than the viewport, and the section inside
-// it sticks to the top, so the page scrolls while the hero holds still and the wordmark
-// animates into the nav. Scroll releases to normal once the track ends.
-//
-// MaxScene sits outside the track deliberately — it's fixed, and any transformed or
-// pinned ancestor would make it resolve against that ancestor instead of the viewport.
+// Pinned hero: the tall track scrolls while the sticky section holds and the wordmark animates into the nav. MaxScene sits outside the track since a transformed/pinned ancestor would break its fixed positioning.
 import { HeroHud } from "./HeroHud";
 import { HeroScrollController } from "./HeroScrollController";
 import { HERO_TRACK_ID } from "./heroTransition";

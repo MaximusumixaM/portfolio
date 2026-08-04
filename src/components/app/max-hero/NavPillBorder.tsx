@@ -17,12 +17,7 @@ interface Segment {
   d: string;
 }
 
-/**
- * Draws the pill's border once the logo settles. Two temporary lines run from the centre
- * out to the west and east mid-points (then fade), and four real segments grow from those
- * mid-points around the stadium outline to meet at top- and bottom-centre — so the border
- * appears to build out of the two side points rather than fading in whole.
- */
+// Draws the pill border on settle: temp lines run centre → side mid-points (then fade), then four segments grow from those mid-points around the outline.
 export function NavPillBorder({ width, height, drawn }: NavPillBorderProps) {
   if (width === 0 || height === 0) return null;
 

@@ -19,19 +19,10 @@ import { Heading } from "@/components/peduncle/Typography";
 const LOGO_ASPECT = 1047 / 389;
 /** Fraction of the settle where the pill fades in behind the arriving logo. */
 const APPEAR_AT = 0.55;
-/** Fraction of the settle where the logo has landed and the border starts drawing.
- * Just past the end of the rise (~0.70), so it begins the moment the logo parks. */
+/** Progress where the logo has parked (just past the rise) and the border starts drawing. */
 const BORDER_AT = 0.72;
 
-/**
- * The resting place for the settled wordmark, and — as an easter egg — the trigger for a
- * dialog when you click the pill. Placeholder chrome for now; the real nav (language
- * dropdown, theme switcher) gets built around this slot later.
- *
- * The logo itself is not in here: it's the 3D wordmark from the canvas, which is fixed
- * above this and animates into the reserved slot as you scroll. The border is an SVG
- * overlay (NavPillBorder) so the pill can be genuinely borderless until it draws in.
- */
+// Resting place for the settled wordmark (the 3D logo animates into this slot) and the easter-egg dialog trigger. Border is the SVG overlay so the pill starts borderless.
 export function NavPill() {
   const progress = useHeroProgress();
   const isSettled = progress > APPEAR_AT;
@@ -57,8 +48,7 @@ export function NavPill() {
       <nav
         aria-label="Primary"
         className={cn(
-          // The nav strip spans the full width; keep it click-through so it never blocks
-          // the page beneath it — only the pill itself is interactive.
+          // Full-width strip stays click-through; only the pill itself is interactive.
           "pointer-events-none fixed inset-x-0 top-m z-20 flex justify-center transition-all duration-300",
           isSettled ? "translate-y-0 opacity-100" : "-translate-y-s opacity-0",
         )}
@@ -71,8 +61,7 @@ export function NavPill() {
           )}
         >
           <span className="visually-hidden">Max Nobell-Cluff</span>
-          {/* Reserved slot the 3D logo lands in — sized from the shared constant rather
-              than a spacing token so it matches the wordmark exactly. */}
+          {/* Reserved slot the 3D logo lands in, sized from the shared constant. */}
           <div
             aria-hidden="true"
             style={{

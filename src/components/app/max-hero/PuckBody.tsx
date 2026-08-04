@@ -29,10 +29,7 @@ const PILL_SCALE = 0.42;
 
 /** Arcs finish their job as the body reveals, then fade before the rise. */
 const ARC_FADE = [0.34, 0.46] as const;
-/**
- * Body fades over the last quarter of the rise — the same marker the tilt flattens on —
- * so it's gone by the time it reaches the top, handing the shape to the glassy DOM pill.
- */
+// Body fades over the rise's last quarter (same marker the tilt flattens on), handing off to the DOM pill.
 const BODY_FADE: readonly [number, number] = [
   PUCK_PHASES.rise[0] + 0.75 * (PUCK_PHASES.rise[1] - PUCK_PHASES.rise[0]),
   PUCK_PHASES.rise[1],
@@ -85,18 +82,7 @@ function buildStadiumGeometry(): THREE.ExtrudeGeometry {
   return geometry;
 }
 
-/**
- * The hockey puck. Its shape travels: four arcs sweep in to draw a 2D circle, the body
- * reveals and tilts to a 3D puck, then it flattens and stretches into the 2D pill shape
- * before the glassy DOM nav pill takes over.
- *
- * The body geometry is the *full* pill (earcut-filled, so the middle is solid). A vertex
- * shader compresses the two halves together — `transformed.x -= sign(x) * uCompress` — to
- * a circle at the start; releasing that compression opens it back into the pill. Morphing
- * this direction avoids the torn middle that splitting a disc apart would leave.
- *
- * Self-driven by scroll progress; position/tilt/rise are the parent HeroStage's job.
- */
+// The puck: arcs draw a circle, the body reveals/tilts to a 3D puck, then flattens into the pill. Geometry is the full pill, compressed to a circle in the vertex shader (`transformed.x -= sign(x) * uCompress`) and released back — avoids the torn middle a disc-split would leave.
 export function PuckBody() {
   const bodyRef = useRef<THREE.Mesh>(null);
   // Arcs start strong and ease to the default border colour as they draw in.

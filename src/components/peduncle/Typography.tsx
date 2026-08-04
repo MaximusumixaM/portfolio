@@ -14,7 +14,10 @@ export type HeadingProps = React.ComponentProps<"h1"> & { level: HeadingLevel };
 export function Heading({ level, className, ...props }: HeadingProps) {
   const Tag = level;
   return (
-    <Tag className={cn("font-display", HEADING_SIZE[level], className)} {...props} />
+    <Tag
+      className={cn("font-display font-bold", HEADING_SIZE[level], className)}
+      {...props}
+    />
   );
 }
 

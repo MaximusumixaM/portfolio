@@ -4,21 +4,123 @@
 @import "./tokens/semantic.css";
 @import "./tokens/base.css";
 
+/* Aileron: one family, each weight/style mapped so font-weight/font-style pick the file. */
 @font-face {
-  font-family: "Futura";
-  src: url("/fonts/Futura.ttf") format("truetype");
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-Thin.otf") format("opentype");
+  font-weight: 100;
+  font-style: normal;
   font-display: swap;
 }
-
 @font-face {
-  font-family: "Norms";
-  src: url("/fonts/Norms.otf") format("opentype");
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-ThinItalic.otf") format("opentype");
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-UltraLight.otf") format("opentype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-UltraLightItalic.otf") format("opentype");
+  font-weight: 200;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-LightItalic.otf") format("opentype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-Italic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-SemiBoldItalic.otf") format("opentype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-BoldItalic.otf") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-Heavy.otf") format("opentype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-HeavyItalic.otf") format("opentype");
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-Black.otf") format("opentype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Aileron";
+  src: url("/fonts/aileron/Aileron-BlackItalic.otf") format("opentype");
+  font-weight: 900;
+  font-style: italic;
   font-display: swap;
 }
 
 @theme {
-  --font-sans: "Futura", Helvetica, sans-serif;
-  --font-display: "Norms", Helvetica, sans-serif;
+  --font-sans: "Aileron", Helvetica, sans-serif;
+  --font-display: "Aileron", Helvetica, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Spacing */

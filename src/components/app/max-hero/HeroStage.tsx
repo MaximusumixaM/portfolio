@@ -98,8 +98,7 @@ export function HeroStage() {
     const arcs = phase(progress, PUCK_PHASES.arcs);
     const reveal = phase(progress, PUCK_PHASES.reveal);
     const rise = phase(progress, PUCK_PHASES.rise);
-    // Last quarter of the rise: the tilt flattens, the puck fades, and the letters settle
-    // back to the z = 0 plane (they were lifted only to sit on the puck).
+    // Rise's last quarter: tilt flattens, puck fades, letters settle back to the z = 0 plane.
     const [riseStart, riseEnd] = PUCK_PHASES.rise;
     const flatten = phase(progress, [riseStart + 0.75 * (riseEnd - riseStart), riseEnd]);
     const settle = easeSettle(progress);
@@ -131,9 +130,7 @@ export function HeroStage() {
       mesh.position.z = item.letter.position[2] * (1 - arcs);
     }
 
-    // The label: shrink from the big landing size onto the puck face and lift so the letters
-    // rest on top of the cap (clearing the arcs). The lift eases back to 0 as the puck fades,
-    // so the settled logo sits on the z = 0 plane and isn't nudged up by perspective.
+    // Shrink the label onto the puck face and lift it onto the cap; the lift eases back to 0 as the puck fades.
     const face = faceRef.current;
     if (face !== null) {
       face.scale.setScalar(THREE.MathUtils.lerp(heroScale, faceScale, arcs));
@@ -152,9 +149,7 @@ export function HeroStage() {
     assembly.scale.setScalar(THREE.MathUtils.lerp(1, navScale, rise));
     assembly.position.y = THREE.MathUtils.lerp(0, navY, rise);
 
-    // Tilt up during the reveal (top leans away to expose the south side wall below the
-    // letters), hold it while it rises, then flatten over the same window as the fade.
-    // (Flip TILT_MAX's sign to reveal the opposite edge.) Parallax is layered on while alive.
+    // Tilt up at reveal (top leans away, showing the south side), hold through the rise, then flatten. Flip TILT_MAX's sign for the opposite edge.
     const tilt = -TILT_MAX * reveal * (1 - flatten);
     const targetPitch = tilt - pointer.current.y * 0.2 * liveliness;
     const targetYaw = pointer.current.x * 0.34 * liveliness;

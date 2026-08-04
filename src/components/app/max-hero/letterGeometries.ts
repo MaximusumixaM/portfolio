@@ -25,10 +25,7 @@ const WORDMARK_HEIGHT = 3.4;
 const DEPTH_RATIO = 0.19;
 /** Corner-fillet radius, in SVG units — the outline is drawn sharp, rounding happens here. */
 const CORNER_RADIUS = 24;
-/**
- * Max facet edge length in world units — drives how dense the flexing mesh is.
- * Triangle count scales with 1/MAX_EDGE_LENGTH², so doubling this quarters the count.
- */
+// Max facet edge length (world units) — mesh density; count scales with 1/MAX_EDGE_LENGTH².
 const MAX_EDGE_LENGTH = 0.64;
 const TESSELLATE_ITERATIONS = 6;
 /** Wordmark SVG viewBox height, in SVG units. */
@@ -36,10 +33,7 @@ const SVG_HEIGHT = 389;
 
 /** Document order of the paths in max-wordmark.svg (see the file). */
 const LETTER_IDS = ["x", "a", "m"] as const;
-/**
- * Depth layering (world units): the letters overlap in plan, so separate them along z
- * to read as independent planes rather than clipping into each other — M in front, X behind.
- */
+// Depth layering (world units) so overlapping letters read as separate planes — M front, X behind.
 const LETTER_Z_OFFSET: Record<string, number> = { m: 0.8, a: 0, x: -0.8 };
 
 /** Modular array access that satisfies noUncheckedIndexedAccess for cyclic contours. */
@@ -54,10 +48,7 @@ function contourCorners(contour: THREE.Path): THREE.Vector2[] {
   return contour.curves.map((curve) => curve.getPoint(0));
 }
 
-/**
- * Draws `points` into `target` as a closed contour with each sharp corner replaced by a
- * quadratic fillet, clamped so neighbouring fillets never overlap.
- */
+// Draws a closed contour into `target`, replacing each corner with a clamped quadratic fillet.
 function drawRoundedContour(
   target: THREE.Path,
   points: readonly THREE.Vector2[],
@@ -127,12 +118,7 @@ function extrudeLetter(
   });
 }
 
-/**
- * Parses the MAX wordmark SVG into one dense, flat-shadeable geometry per letter.
- * Each geometry is centered on its own centroid; `position` places it back into the
- * centered wordmark so letters keep their original kerning and overlap while still
- * being able to float/rotate about their own center.
- */
+// Parses the wordmark SVG into one dense flat-shadeable geometry per letter, each centered on its own centroid with `position` restoring the layout.
 export function buildWordmark(): Wordmark {
   const depth = SVG_HEIGHT * DEPTH_RATIO;
   const tessellate = new TessellateModifier(

@@ -1,17 +1,6 @@
 import * as THREE from "three";
 
-/**
- * A MeshPhysicalMaterial extended (via onBeforeCompile) into the "living" hero material:
- * - vertices displace along their normal by animated 3D simplex noise, so the dense letter
- *   mesh flexes as a connected surface (coincident verts share a position → share a
- *   displacement → the surface stays watertight while undulating);
- * - `flatShading` derives per-facet normals from the displaced surface, so it reads faceted;
- * - the diffuse color drifts through a cyclic gradient over time and across the surface.
- *
- * Per-letter variation comes from `seed`. Drive the animation by advancing `uniforms.uTime`
- * each frame (exposed on `material.userData.flexUniforms`).
- */
-
+// MeshPhysicalMaterial extended via onBeforeCompile: simplex-noise vertex flex, flat-shaded facets, drifting gradient. Drive by advancing uniforms.uTime.
 export interface FlexUniforms {
   uTime: { value: number };
   uSeed: { value: number };
@@ -25,19 +14,12 @@ export interface FlexMaterial extends THREE.MeshPhysicalMaterial {
   userData: { flexUniforms: FlexUniforms };
 }
 
-// Cyclic cosine gradient (Inigo Quilez): color(t) = A + B * cos(2pi * (C*t + D)).
-// Crimson family — sweeps bright crimson → deep red → near-black blood red → mid crimson.
-// Green is kept low throughout (green + red is what reads as orange), and blue's phase
-// sits close to red's so it falls off with red rather than lingering into purple.
+// Cyclic cosine gradient (IQ): color(t) = A + B * cos(2pi * (C*t + D)). Crimson family (green kept low).
 const GRADIENT_A = "vec3(0.60, 0.075, 0.14)";
 const GRADIENT_B = "vec3(0.30, 0.060, 0.10)";
 const GRADIENT_C = "vec3(1.0, 1.0, 1.0)";
 const GRADIENT_D = "vec3(0.00, 0.06, 0.10)";
-/**
- * The settled logo colour the gradient collapses to at full flatten — a warm flag red
- * (~#D52B1E in linear space). Green sits just above blue on purpose: blue-over-green is
- * what tips a red toward pink, so the warm lean is what keeps it from reading crimson.
- */
+// Settled-logo color at full flatten — warm flag red (green just above blue avoids a pink lean).
 const FLAT_COLOR = "vec3(0.66, 0.026, 0.014)";
 
 /** Ashima 3D simplex noise (webgl-noise), returns roughly [-1, 1]. */
@@ -102,9 +84,7 @@ ${SIMPLEX_3D}
 `;
 
 const VERTEX_DISPLACEMENT = /* glsl */ `
-// Displace by a 3D domain warp that is a pure function of position (not the vertex
-// normal): coincident vertices at hard edges/bevels share a position, so they always
-// move together and the mesh never cracks apart as it breathes.
+// Domain-warp displacement (function of position, not normal), so coincident edge/bevel verts move together and never crack apart.
 vec3 flexP = position * uNoiseScale + vec3(uSeed) + uTime * 0.28;
 vec3 flexOffset = vec3(
   snoise(flexP),
@@ -133,8 +113,7 @@ float flexT = fract(
   vFlexObjPos.y * 0.55 + vFlexObjPos.x * 0.18
   + uTime * 0.045 + uSeed * 0.13 + vFlexNoise * 0.35
 );
-// Collapses to a single flat crimson as it settles, so the nav logo reads as a wordmark
-// rather than a shifting gradient.
+// Collapses to a single flat color as it settles, so the nav logo isn't a shifting gradient.
 diffuseColor.rgb = mix(flexPalette(flexT), ${FLAT_COLOR}, uFlatten);
 `;
 
@@ -178,8 +157,7 @@ export function createFlexMaterial(seed: number): FlexMaterial {
         `#include <color_fragment>\n${FRAGMENT_COLOR}`,
       );
   };
-  // Unique per seed so each letter compiles with its own seed uniform rather than
-  // sharing a program (and thus a seed) with its siblings.
+  // Unique per seed so each letter compiles with its own seed uniform, not a shared program.
   material.customProgramCacheKey = () => `max-flex-${String(seed)}`;
 
   return material;

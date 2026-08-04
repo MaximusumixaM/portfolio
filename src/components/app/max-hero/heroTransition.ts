@@ -1,15 +1,7 @@
 import type Lenis from "lenis";
 import { useSyncExternalStore } from "react";
 
-/**
- * Shared state for the hero → nav transition.
- *
- * GSAP ScrollTrigger owns the scroll maths (see HeroScrollController) and pushes a single
- * 0–1 progress value in here. Both the 3D wordmark (canvas island) and the DOM chrome
- * (HUD, nav pill) are separate React roots, so they read from this module singleton
- * rather than sharing context. The canvas reads it imperatively inside useFrame; the DOM
- * subscribes via `useHeroProgress`.
- */
+// Shared 0–1 hero→nav progress (ScrollTrigger writes it); canvas reads imperatively, DOM via useHeroProgress.
 
 /** Id of the tall track in MaxHero.astro that the pinned hero scrolls through. */
 export const HERO_TRACK_ID = "hero-track";
@@ -19,12 +11,7 @@ export const PORTFOLIO_ID = "portfolio";
 /** Height of the settled logo in CSS pixels — the pill reserves exactly this. */
 export const NAV_LOGO_HEIGHT_PX = 32;
 
-/**
- * The pill's own box metrics, mirroring its Tailwind classes in NavPill: `top-m` (16px)
- * and `py-s` (8px). The border is a non-layout SVG overlay (NavPillBorder), so it doesn't
- * count here. Kept so the logo's resting centre is computed rather than hand-tuned —
- * otherwise resizing the logo silently misaligns the two.
- */
+// Mirrors NavPill's `top-m` (16) + `py-s` (8); the border is a non-layout SVG overlay.
 const NAV_PILL_TOP_PX = 16;
 const NAV_PILL_PADDING_Y_PX = 8;
 
@@ -67,16 +54,7 @@ export function easeSettle(progress: number): number {
   return progress * progress * (3 - 2 * progress);
 }
 
-/**
- * Sub-ranges of the 0–1 scroll that stage the hockey intro. Both the puck and the letters
- * read these so the two stay locked to the same beats:
- * - `arcs`   — four arcs sweep in from the cardinal points and close into a circle,
- *              while the big MAX shrinks down onto what becomes the puck face.
- * - `reveal` — the assembly tilts up to show the circle is a thin 3D puck, then flat again.
- * - `rise`   — the puck (still a flat circle) travels up to the nav slot.
- * - `morph`  — only once parked at the top: the circle opens out into the pill shape,
- *              then the glassy DOM pill takes over.
- */
+// Scroll sub-ranges staging the intro (arcs → reveal → rise → morph); puck and letters share these beats.
 export const PUCK_PHASES = {
   arcs: [0.0, 0.22],
   reveal: [0.2, 0.42],
@@ -90,11 +68,7 @@ export function phase(progress: number, [start, end]: readonly [number, number])
   return Math.min(1, Math.max(0, (progress - start) / (end - start)));
 }
 
-/**
- * The live Lenis instance, registered by HeroScrollController. Held here (behind a
- * type-only import, so nothing from lenis reaches the server bundle) to keep the
- * server-rendered HUD from having to import the controller's client-only dependencies.
- */
+// Live Lenis instance, set by HeroScrollController; type-only import keeps lenis out of the server bundle.
 let lenis: Lenis | null = null;
 
 export function registerLenis(instance: Lenis | null): void {

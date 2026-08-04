@@ -6,16 +6,7 @@ import { HeroStage } from "./HeroStage";
 
 import { cn } from "@/components/lib/utils";
 
-/**
- * The WebGL half of the hero. Mounted `client:only` (it touches WebGL/window, so it
- * can't be server-rendered); the surrounding section and HUD are server-rendered in
- * MaxHero.astro so the viewport-height space is reserved before this ever loads.
- *
- * The fixed positioning lives on a wrapper, not on <Canvas>: r3f sets `position: relative`
- * as an inline style on its own container, which beats any Tailwind class we put there.
- * Fixed (rather than absolute) is what lets the wordmark persist as the nav logo once the
- * hero has scrolled past, and pointer-events-none stops it swallowing clicks page-wide.
- */
+// The WebGL half of the hero, mounted client:only. Fixed positioning lives on the wrapper (not <Canvas>, which r3f styles inline) so the wordmark persists as the nav logo after scroll.
 export function MaxScene() {
   const [isReady, setIsReady] = useState(false);
 
@@ -27,9 +18,7 @@ export function MaxScene() {
       )}
     >
       <Canvas
-        // r3f sets pointer-events:auto inline on its container, which overrides the
-        // wrapper's pointer-events-none and makes this full-viewport canvas eat every
-        // click on the page. Force it back to none so clicks pass through to the content.
+        // r3f sets pointer-events:auto inline on its container; force none so this full-viewport canvas doesn't eat page clicks.
         style={{ pointerEvents: "none" }}
         camera={{ position: [0, 0, 9], fov: 40 }}
         gl={{ antialias: true, alpha: true }}
