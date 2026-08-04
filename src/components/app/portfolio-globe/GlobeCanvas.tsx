@@ -3,19 +3,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import ThreeGlobe from "three-globe";
 
+import {
+  COUNTRY_ALTITUDE,
+  REGION_ALTITUDE,
+  isGlobePolygon,
+  loadGlobePolygons,
+  polygonCapColor,
+  type GlobePolygon,
+} from "./globePolygons";
 import { rotationForCoords, shortestAngleTo } from "./globeRotation";
 import { PIN_ALTITUDE, ProjectPins } from "./ProjectPins";
 
 import { useThemeColor } from "@/components/lib/useThemeColor";
 import type { ResolvedProject } from "@/types/project";
 
-const COUNTRIES_URL = "/geo/countries.geojson";
-
 /** Close enough to fill the frame, with room above the globe for a selected pin to stand clear. */
 const CAMERA_DISTANCE = 370;
 const CAMERA_FOV = 35;
-/** Country outlines float just clear of the sphere so their strokes don't z-fight it. */
-const COUNTRY_ALTITUDE = 0.004;
 /** Rotation easing rate — higher settles on the selected pin faster. */
 const FOCUS_DAMPING = 3.2;
 const DRAG_SENSITIVITY = 0.005;
@@ -25,48 +29,26 @@ const DRAG_SLOP_PX = 5;
 
 const anchorPosition = new THREE.Vector3();
 
-interface FeatureCollection {
-  features: object[];
-}
-
-function isFeatureCollection(value: unknown): value is FeatureCollection {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "features" in value &&
-    Array.isArray(value.features)
-  );
-}
-
-function useCountryFeatures(): object[] {
-  const [features, setFeatures] = useState<object[]>([]);
+function useGlobePolygons(): GlobePolygon[] {
+  const [polygons, setPolygons] = useState<GlobePolygon[]>([]);
 
   useEffect(() => {
     let isMounted = true;
-    async function loadCountries() {
-      const response = await fetch(COUNTRIES_URL);
-      if (!response.ok) {
-        throw new Error(
-          `Failed to load ${COUNTRIES_URL}: ${response.status} ${response.statusText}`,
-        );
-      }
-      const data: unknown = await response.json();
-      if (!isFeatureCollection(data)) {
-        throw new Error(`${COUNTRIES_URL} is not a GeoJSON FeatureCollection`);
-      }
-      if (isMounted) setFeatures(data.features);
-    }
 
-    void loadCountries().catch((error: unknown) => {
-      console.error(error);
-    });
+    void loadGlobePolygons()
+      .then((loaded) => {
+        if (isMounted) setPolygons(loaded);
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+      });
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  return features;
+  return polygons;
 }
 
 interface GlobeSceneProps {
@@ -91,7 +73,7 @@ function GlobeScene({
   const targetRotation = useRef({ x: 0, y: 0 });
   const dragDistance = useRef(0);
 
-  const features = useCountryFeatures();
+  const polygons = useGlobePolygons();
   const strokeColor = useThemeColor("--color-foreground-default", "#000000");
   // A shade off the page, so the sphere reads as a disc without a drawn silhouette.
   const surfaceColor = useThemeColor(
@@ -105,7 +87,11 @@ function GlobeScene({
     () =>
       new ThreeGlobe({ animateIn: false })
         .showAtmosphere(false)
-        .polygonAltitude(COUNTRY_ALTITUDE),
+        .polygonAltitude((polygon) =>
+          isGlobePolygon(polygon) && polygon.tier === "region"
+            ? REGION_ALTITUDE
+            : COUNTRY_ALTITUDE,
+        ),
     [],
   );
 
@@ -117,23 +103,37 @@ function GlobeScene({
   }, [globe, surfaceMaterial]);
 
   useEffect(() => {
-    globe.polygonsData(features);
-  }, [globe, features]);
-
-  // Countries as outlines only: caps painted the page colour, so just the strokes read.
-  useEffect(() => {
-    surfaceMaterial.color = surfaceColor;
-    const surfaceCss = `#${surfaceColor.getHexString()}`;
-    globe
-      .globeMaterial(surfaceMaterial)
-      .polygonCapColor(() => surfaceCss)
-      .polygonSideColor(() => surfaceCss)
-      .polygonStrokeColor(() => `#${strokeColor.getHexString()}`);
-  }, [globe, surfaceMaterial, surfaceColor, strokeColor]);
+    globe.polygonsData(polygons);
+  }, [globe, polygons]);
 
   const selectedProject = projects.find(
     (project) => project.slug === activeSlug,
   );
+
+  // Countries read as outlines only — caps painted the page colour — except the selected
+  // project's country and province, which take a wash of the foreground token.
+  useEffect(() => {
+    surfaceMaterial.color = surfaceColor;
+    const palette = {
+      surface: surfaceColor,
+      foreground: strokeColor,
+      selectedCountryCode: selectedProject?.location.countryCode,
+      selectedRegionCode: selectedProject?.location.regionCode,
+    };
+    const fill = (polygon: object) =>
+      isGlobePolygon(polygon) ? polygonCapColor(polygon, palette) : "";
+
+    globe
+      .globeMaterial(surfaceMaterial)
+      .polygonCapColor(fill)
+      .polygonSideColor(fill)
+      // Only national borders are drawn; a region shows through its fill alone.
+      .polygonStrokeColor((polygon) =>
+        isGlobePolygon(polygon) && polygon.tier === "region"
+          ? false
+          : `#${strokeColor.getHexString()}`,
+      );
+  }, [globe, surfaceMaterial, surfaceColor, strokeColor, selectedProject]);
 
   // Selecting a project re-aims the globe; the frame loop eases towards this target.
   useEffect(() => {

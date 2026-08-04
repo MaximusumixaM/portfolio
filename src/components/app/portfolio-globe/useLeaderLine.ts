@@ -9,6 +9,8 @@ export interface LeaderLine {
   sectionRef: React.RefObject<HTMLElement | null>;
   labelRef: React.RefObject<HTMLElement | null>;
   lineRef: React.RefObject<SVGPolylineElement | null>;
+  /** The dot marking the city itself, at the line's start. */
+  cityDotRef: React.RefObject<SVGCircleElement | null>;
   /** Redraws from a viewport-space point to the label. Safe to call every frame. */
   drawFrom: (viewportX: number, viewportY: number, isVisible: boolean) => void;
 }
@@ -21,16 +23,26 @@ export function useLeaderLine(): LeaderLine {
   const sectionRef = useRef<HTMLElement>(null);
   const labelRef = useRef<HTMLElement>(null);
   const lineRef = useRef<SVGPolylineElement>(null);
+  const cityDotRef = useRef<SVGCircleElement>(null);
 
   const drawFrom = useCallback(
     (viewportX: number, viewportY: number, isVisible: boolean) => {
       const section = sectionRef.current;
       const label = labelRef.current;
       const line = lineRef.current;
-      if (section === null || label === null || line === null) return;
+      const cityDot = cityDotRef.current;
+      if (
+        section === null ||
+        label === null ||
+        line === null ||
+        cityDot === null
+      ) {
+        return;
+      }
 
       if (!isVisible) {
         line.style.opacity = "0";
+        cityDot.style.opacity = "0";
         return;
       }
 
@@ -46,9 +58,13 @@ export function useLeaderLine(): LeaderLine {
         `${startX.toFixed(1)},${startY.toFixed(1)} ${(endX - ELBOW_PX).toFixed(1)},${endY.toFixed(1)} ${endX.toFixed(1)},${endY.toFixed(1)}`,
       );
       line.style.opacity = "1";
+
+      cityDot.setAttribute("cx", startX.toFixed(1));
+      cityDot.setAttribute("cy", startY.toFixed(1));
+      cityDot.style.opacity = "1";
     },
     [],
   );
 
-  return { sectionRef, labelRef, lineRef, drawFrom };
+  return { sectionRef, labelRef, lineRef, cityDotRef, drawFrom };
 }

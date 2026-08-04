@@ -9,7 +9,7 @@ import { teardropFillGeometry, teardropOutlineGeometry } from "./pinShape";
 import type { ResolvedProject } from "@/types/project";
 
 /** Pin height in globe units (the globe's radius is 100). */
-const PIN_HEIGHT = 9;
+const PIN_HEIGHT = 4.5;
 const SELECTED_SCALE = 1.35;
 /** Lifts the tip clear of the country outlines sitting just above the sphere. */
 export const PIN_ALTITUDE = 0.012;

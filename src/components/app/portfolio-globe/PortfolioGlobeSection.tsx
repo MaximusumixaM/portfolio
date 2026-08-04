@@ -24,7 +24,8 @@ export function PortfolioGlobeSection({
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   // WebGL has no server render, so the canvas waits for the client while the panel ships as HTML.
   const [isCanvasMounted, setIsCanvasMounted] = useState(false);
-  const { sectionRef, labelRef, lineRef, drawFrom } = useLeaderLine();
+  const { sectionRef, labelRef, lineRef, cityDotRef, drawFrom } =
+    useLeaderLine();
 
   useEffect(() => {
     setIsCanvasMounted(true);
@@ -81,6 +82,12 @@ export function PortfolioGlobeSection({
             fill="none"
             strokeWidth="1"
             className="stroke-foreground-default transition-opacity duration-200"
+            style={{ opacity: 0 }}
+          />
+          <circle
+            ref={cityDotRef}
+            r="2"
+            className="fill-foreground-default transition-opacity duration-200"
             style={{ opacity: 0 }}
           />
         </svg>
