@@ -1,5 +1,6 @@
 ---
 // Pinned hero: the tall track scrolls while the sticky section holds and the wordmark animates into the nav. MaxScene sits outside the track since a transformed/pinned ancestor would break its fixed positioning.
+// The track is 100vh of sticky section + 50vh of scroll to play the intro through; any longer and the finished hero sits on a blank screen before the globe arrives.
 import { HeroHud } from "./HeroHud";
 import { HeroScrollController } from "./HeroScrollController";
 import { HERO_TRACK_ID } from "./heroTransition";
@@ -10,7 +11,7 @@ import { NavPill } from "./NavPill";
 <MaxScene client:only="react" />
 <HeroScrollController client:only="react" />
 
-<div id={HERO_TRACK_ID} class="relative h-[200vh] w-full">
+<div id={HERO_TRACK_ID} class="relative h-[150vh] w-full">
   <section
     class="sticky top-0 h-screen w-full overflow-hidden bg-background-default"
   >

@@ -1,7 +1,8 @@
 ---
 import exposeGif from "../assets/images/about/expose.gif";
+import { AboutDialog } from "../components/app/AboutDialog";
 import MaxHero from "../components/app/max-hero/MaxHero.astro";
-import { PortfolioApp } from "../components/app/PortfolioApp";
+import { PortfolioGlobeSection } from "../components/app/portfolio-globe/PortfolioGlobeSection";
 import { projects } from "../data/projects";
 import { resolveProjects } from "../data/resolve-project-images";
 import { bio, awards, socialLinks } from "../data/site";
@@ -17,14 +18,14 @@ const resolvedSocialLinks = socialLinks.map((link) => ({
 
 <Layout>
   <MaxHero />
-  <div id="portfolio">
-    <PortfolioApp
-      client:load
-      projects={resolvedProjects}
-      bio={bio}
-      awards={awards}
-      socialLinks={resolvedSocialLinks}
-      photoSrc={exposeGif.src}
-    />
-  </div>
+  <AboutDialog
+    client:load
+    bio={bio}
+    awards={awards}
+    socialLinks={resolvedSocialLinks}
+    photoSrc={exposeGif.src}
+  />
+  <main id="portfolio">
+    <PortfolioGlobeSection client:load projects={resolvedProjects} />
+  </main>
 </Layout>

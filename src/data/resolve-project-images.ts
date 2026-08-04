@@ -45,6 +45,7 @@ export async function resolveProjects(
       return {
         slug: project.slug,
         title: project.title,
+        location: project.location,
         thumbnail,
         about: project.about,
         notes: project.notes,

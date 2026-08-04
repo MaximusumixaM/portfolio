@@ -1,3 +1,5 @@
+import type { ProjectLocation } from "@/data/locations";
+
 export interface ResolvedImage {
   src: string;
   srcSet: string;
@@ -15,6 +17,7 @@ export interface ProjectNote {
 export interface ResolvedProject {
   slug: string;
   title: string;
+  location: ProjectLocation;
   thumbnail: ResolvedImage;
   about: string;
   notes: ProjectNote[];

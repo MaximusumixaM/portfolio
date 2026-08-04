@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { PUCK_PHASES, getHeroProgress, phase } from "./heroTransition";
-import { useThemeColor } from "./useThemeColor";
+
+import { useThemeColor } from "@/components/lib/useThemeColor";
 
 /** Puck dimensions in the assembly's local space (where the MAX letters are ~3.4 tall). */
 export const PUCK_RADIUS = 2.4;
