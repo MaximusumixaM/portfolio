@@ -1,114 +1,50 @@
-import { useEffect, useRef, useState } from "react";
+import { scrollPastIntro, useHeroProgress } from "./heroTransition";
 
-import {
-  PORTFOLIO_ID,
-  scrollToElement,
-  useHeroProgress,
-} from "./heroTransition";
-
+import { cn } from "@/components/lib/utils";
 import { Button } from "@/components/peduncle/Button";
 import { Helper } from "@/components/peduncle/Typography";
 
-/** Peak parallax angles (degrees) surfaced in the readout — mirrors HeroStage's rotation. */
-const AZIMUTH_RANGE = 19.5;
-const ELEVATION_RANGE = 11.5;
+/** The cue clears out as soon as the intro is under way. */
+const CUE_FADE_RATE = 12;
+// Chrome, not headings — the page's one real heading is the visually-hidden h1 below. Light and
+// widely spaced, so they hold their corners without competing with the wordmark.
+const CORNER_LABEL =
+  "font-display text-large font-extralight tracking-widest text-foreground-default";
 
-interface Readout {
-  azimuth: number;
-  elevation: number;
-}
-
-function formatAngle(value: number): string {
-  const sign = value >= 0 ? "+" : "−";
-  return `${sign}${Math.abs(value).toFixed(1).padStart(4, "0")}°`;
-}
-
-function scrollToPortfolio() {
-  scrollToElement(PORTFOLIO_ID);
-}
-
-/** Live pointer-driven azimuth/elevation, throttled to one update per frame. */
-function usePointerReadout(): Readout {
-  const [readout, setReadout] = useState<Readout>({ azimuth: 0, elevation: 0 });
-  const frame = useRef<number | null>(null);
-
-  useEffect(() => {
-    function handleMove(event: PointerEvent) {
-      if (frame.current !== null) return;
-      frame.current = requestAnimationFrame(() => {
-        frame.current = null;
-        const x = (event.clientX / window.innerWidth) * 2 - 1;
-        const y = -((event.clientY / window.innerHeight) * 2 - 1);
-        setReadout({
-          azimuth: x * AZIMUTH_RANGE,
-          elevation: y * ELEVATION_RANGE,
-        });
-      });
-    }
-    window.addEventListener("pointermove", handleMove);
-    return () => {
-      window.removeEventListener("pointermove", handleMove);
-      if (frame.current !== null) cancelAnimationFrame(frame.current);
-    };
-  }, []);
-
-  return readout;
-}
-
+// The top corners hold their places for the whole sequence — the scene rearranges around them.
 export function HeroHud() {
-  const { azimuth, elevation } = usePointerReadout();
   const progress = useHeroProgress();
-  // The hero chrome clears out ahead of the wordmark reaching the nav.
-  const opacity = Math.max(0, 1 - progress * 1.8);
+  const cueOpacity = Math.max(0, 1 - progress * CUE_FADE_RATE);
 
   return (
-    <div
-      className="pointer-events-none absolute inset-0 z-40 select-none p-m"
-      style={{ opacity }}
-      aria-hidden={opacity === 0}
-    >
+    <div className="pointer-events-none absolute inset-0 z-40 select-none p-m">
       <h1 className="visually-hidden">
         Max Nobell-Cluff — interaction designer
       </h1>
 
-      <div className="absolute left-m top-m">
-        <Helper className="block font-mono text-xs uppercase tracking-widest">
-          Max Nobell-Cluff
-        </Helper>
-        <Helper className="block font-mono text-xs uppercase tracking-widest opacity-60">
-          Interaction Design
-        </Helper>
-      </div>
-
-      <Helper className="absolute right-m top-m font-mono text-xs uppercase tracking-widest opacity-60">
-        MAX·01
+      <Helper className={cn("absolute left-m top-m", CORNER_LABEL)}>
+        Max Nobell-Cluff
       </Helper>
 
-      <dl className="absolute bottom-m left-m grid grid-cols-[auto_auto] gap-x-s gap-y-xxs font-mono text-xs tabular-nums">
-        <dt className="uppercase tracking-widest opacity-60">
-          <Helper className="font-mono text-xs">AZ</Helper>
-        </dt>
-        <dd>
-          <Helper className="font-mono text-xs">{formatAngle(azimuth)}</Helper>
-        </dd>
-        <dt className="uppercase tracking-widest opacity-60">
-          <Helper className="font-mono text-xs">EL</Helper>
-        </dt>
-        <dd>
-          <Helper className="font-mono text-xs">
-            {formatAngle(elevation)}
-          </Helper>
-        </dd>
-      </dl>
+      <Helper className={cn("absolute right-m top-m", CORNER_LABEL)}>
+        Interaction designer
+      </Helper>
 
-      <div className="pointer-events-auto absolute inset-x-0 bottom-l flex justify-center">
+      <div
+        className={cn(
+          "absolute inset-x-0 bottom-l flex justify-center",
+          cueOpacity > 0 ? "pointer-events-auto" : "pointer-events-none",
+        )}
+        style={{ opacity: cueOpacity }}
+        aria-hidden={cueOpacity === 0}
+      >
         <Button
           variant="ghost"
           size="sm"
-          onClick={scrollToPortfolio}
-          className="font-mono text-xs uppercase tracking-widest opacity-70 hover:opacity-100"
+          onClick={scrollPastIntro}
+          className="tracking-widest font-light text-foreground-tertiary"
         >
-          Enter ↓
+          enter ↓
         </Button>
       </div>
     </div>

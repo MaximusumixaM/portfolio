@@ -2,14 +2,26 @@
 const STROKE_WIDTH = 1.5;
 /** Time the temporary centre-out lines take to reach the pill edges. */
 const TEMP_MS = 380;
-/** Time the four real border segments take to close around the outline. */
+/** Time the real border segments take to close around the outline. */
 const REAL_MS = 560;
+/** Total time from `drawn` flipping to a closed outline, for whatever follows the border. */
+export const BORDER_DRAW_MS = TEMP_MS + REAL_MS;
+
+type End = "left" | "right";
+type Edge = "top" | "bottom";
 
 interface NavPillBorderProps {
   width: number;
   height: number;
   /** True once the logo has arrived; kicks off the draw. */
   drawn: boolean;
+  /** End that butts up against a neighbouring pill: squared off rather than capped. */
+  flatEnd?: End;
+  /**
+   * Where the outline draws from. `centre` shoots out to both side mid-points and closes four
+   * quarters around them; an end sends one line along each edge to meet at the far cap.
+   */
+  origin?: "centre" | End;
 }
 
 interface Segment {
@@ -17,40 +29,113 @@ interface Segment {
   d: string;
 }
 
-// Draws the pill border on settle: temp lines run centre → side mid-points (then fade), then four segments grow from those mid-points around the outline.
-export function NavPillBorder({ width, height, drawn }: NavPillBorderProps) {
+interface Pill {
+  width: number;
+  height: number;
+  /** Cap radius — half the height, since these pills are `rounded-round`. */
+  radius: number;
+  flatEnd: End | undefined;
+}
+
+function endX(pill: Pill, side: End): number {
+  return side === "left" ? 0 : pill.width;
+}
+
+function edgeY(pill: Pill, edge: Edge): number {
+  return edge === "top" ? 0 : pill.height;
+}
+
+/** Where a cap meets the straight edge; a flat end has no cap, so its edge runs to the end itself. */
+function cornerX(pill: Pill, side: End): number {
+  if (pill.flatEnd === side) return endX(pill, side);
+  return side === "left" ? pill.radius : pill.width - pill.radius;
+}
+
+/** Sweep flag for a cap travelled from its mid-point out to `edge`; reverse it to come back. */
+function capSweep(side: End, edge: Edge): number {
+  return (side === "left") === (edge === "top") ? 1 : 0;
+}
+
+/** Leaves an end's mid-point onto `edge`: round its cap, or straight along the flat edge. */
+function leaveEnd(pill: Pill, side: End, edge: Edge): string {
+  const y = edgeY(pill, edge);
+  if (pill.flatEnd === side) return `L ${endX(pill, side)},${y}`;
+  const { radius } = pill;
+  return `A ${radius},${radius} 0 0 ${capSweep(side, edge)} ${cornerX(pill, side)},${y}`;
+}
+
+/** Arrives at an end's mid-point from `edge` — the same curve, travelled the other way. */
+function arriveEnd(pill: Pill, side: End, edge: Edge): string {
+  if (pill.flatEnd === side) return `L ${endX(pill, side)},${pill.radius}`;
+  const { radius } = pill;
+  const sweep = 1 - capSweep(side, edge);
+  return `A ${radius},${radius} 0 0 ${sweep} ${endX(pill, side)},${pill.radius}`;
+}
+
+/** A quarter of the outline: an end's mid-point, round its cap, in along `edge` to the centre. */
+function quarterFromEnd(pill: Pill, side: End, edge: Edge): string {
+  return `M ${endX(pill, side)},${pill.radius} ${leaveEnd(pill, side, edge)} L ${pill.width / 2},${edgeY(pill, edge)}`;
+}
+
+/** Half the outline: an end's mid-point, along `edge`, round the far cap to the far mid-point. */
+function halfFromEnd(pill: Pill, side: End, edge: Edge): string {
+  const far: End = side === "left" ? "right" : "left";
+  return `M ${endX(pill, side)},${pill.radius} ${leaveEnd(pill, side, edge)} L ${cornerX(pill, far)},${edgeY(pill, edge)} ${arriveEnd(pill, far, edge)}`;
+}
+
+// Draws a pill's border on settle. The wordmark's pill draws centre-out, which reads as the logo
+// arriving and pushing its own frame outwards; the actions flanking it draw from the end they're
+// tucked behind, so each one looks like it's growing out of the pill it emerged from.
+export function NavPillBorder({
+  width,
+  height,
+  drawn,
+  flatEnd,
+  origin = "centre",
+}: NavPillBorderProps) {
   if (width === 0 || height === 0) return null;
 
-  const w = width;
-  const h = height;
-  const r = h / 2; // rounded-round pill: cap radius is half the height
-  const midX = w / 2;
+  const pill: Pill = { width, height, radius: height / 2, flatEnd };
+  const { radius } = pill;
 
   // Temporary lines: centre → each side mid-point (drawn, then faded).
-  const tempLines: Segment[] = [
-    { id: "temp-west", d: `M ${midX},${r} L 0,${r}` },
-    { id: "temp-east", d: `M ${midX},${r} L ${w},${r}` },
-  ];
+  const tempLines: Segment[] =
+    origin === "centre"
+      ? [
+          { id: "temp-west", d: `M ${width / 2},${radius} L 0,${radius}` },
+          {
+            id: "temp-east",
+            d: `M ${width / 2},${radius} L ${width},${radius}`,
+          },
+        ]
+      : [];
 
-  // Real border: from the side mid-points, N and S around the outline to the centres.
-  const realSegments: Segment[] = [
-    { id: "west-n", d: `M 0,${r} A ${r},${r} 0 0 1 ${r},0 L ${midX},0` },
-    { id: "west-s", d: `M 0,${r} A ${r},${r} 0 0 0 ${r},${h} L ${midX},${h}` },
-    { id: "east-n", d: `M ${w},${r} A ${r},${r} 0 0 0 ${w - r},0 L ${midX},0` },
-    { id: "east-s", d: `M ${w},${r} A ${r},${r} 0 0 1 ${w - r},${h} L ${midX},${h}` },
-  ];
+  const outline: Segment[] =
+    origin === "centre"
+      ? [
+          { id: "west-top", d: quarterFromEnd(pill, "left", "top") },
+          { id: "west-bottom", d: quarterFromEnd(pill, "left", "bottom") },
+          { id: "east-top", d: quarterFromEnd(pill, "right", "top") },
+          { id: "east-bottom", d: quarterFromEnd(pill, "right", "bottom") },
+        ]
+      : [
+          { id: "sweep-top", d: halfFromEnd(pill, origin, "top") },
+          { id: "sweep-bottom", d: halfFromEnd(pill, origin, "bottom") },
+        ];
 
+  // Only the centre-out draw has to wait for its temp lines to reach the edges first.
+  const outlineDelay = origin === "centre" ? TEMP_MS : 0;
   const stroke = "var(--color-border-default)";
 
   return (
     <svg
       className="pointer-events-none absolute inset-0"
-      width={w}
-      height={h}
+      width={width}
+      height={height}
       style={{ overflow: "visible" }}
       aria-hidden="true"
     >
-      {realSegments.map((segment) => (
+      {outline.map((segment) => (
         <path
           key={segment.id}
           d={segment.d}
@@ -63,8 +148,7 @@ export function NavPillBorder({ width, height, drawn }: NavPillBorderProps) {
           style={{
             strokeDasharray: 1,
             strokeDashoffset: drawn ? 0 : 1,
-            // Wait for the temp lines to reach the edges before growing.
-            transition: `stroke-dashoffset ${String(REAL_MS)}ms ease ${drawn ? String(TEMP_MS) : "0"}ms`,
+            transition: `stroke-dashoffset ${String(REAL_MS)}ms ease ${drawn ? String(outlineDelay) : "0"}ms`,
           }}
         />
       ))}

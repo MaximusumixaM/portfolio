@@ -1,31 +1,24 @@
 ---
 import exposeGif from "../assets/images/about/expose.gif";
-import { AboutDialog } from "../components/app/AboutDialog";
-import MaxHero from "../components/app/max-hero/MaxHero.astro";
-import { PortfolioGlobeSection } from "../components/app/portfolio-globe/PortfolioGlobeSection";
+import { HeroExperience } from "../components/app/max-hero/HeroExperience";
 import { projects } from "../data/projects";
 import { resolveProjects } from "../data/resolve-project-images";
 import { bio, awards, socialLinks } from "../data/site";
 import Layout from "../layouts/Layout.astro";
 
 const resolvedProjects = await resolveProjects(projects);
-const resolvedSocialLinks = socialLinks.map((link) => ({
-  label: link.label,
-  href: link.href,
-  iconSrc: link.icon.src,
-}));
+const about = {
+  bio,
+  awards,
+  socialLinks: socialLinks.map((link) => ({
+    label: link.label,
+    href: link.href,
+    iconSrc: link.icon.src,
+  })),
+  photoSrc: exposeGif.src,
+};
 ---
 
 <Layout>
-  <MaxHero />
-  <AboutDialog
-    client:load
-    bio={bio}
-    awards={awards}
-    socialLinks={resolvedSocialLinks}
-    photoSrc={exposeGif.src}
-  />
-  <main id="portfolio">
-    <PortfolioGlobeSection client:load projects={resolvedProjects} />
-  </main>
+  <HeroExperience client:load projects={resolvedProjects} about={about} />
 </Layout>

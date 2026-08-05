@@ -6,7 +6,8 @@ const ELBOW_PX = 28;
 const LABEL_GAP_PX = 10;
 
 export interface LeaderLine {
-  sectionRef: React.RefObject<HTMLElement | null>;
+  /** The layer the line is drawn in; every coordinate is measured against its box. */
+  overlayRef: React.RefObject<HTMLDivElement | null>;
   labelRef: React.RefObject<HTMLElement | null>;
   lineRef: React.RefObject<SVGPolylineElement | null>;
   /** The dot marking the city itself, at the line's start. */
@@ -20,19 +21,19 @@ export interface LeaderLine {
  * from the render loop, so it writes to the DOM rather than going through React state.
  */
 export function useLeaderLine(): LeaderLine {
-  const sectionRef = useRef<HTMLElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLElement>(null);
   const lineRef = useRef<SVGPolylineElement>(null);
   const cityDotRef = useRef<SVGCircleElement>(null);
 
   const drawFrom = useCallback(
     (viewportX: number, viewportY: number, isVisible: boolean) => {
-      const section = sectionRef.current;
+      const overlay = overlayRef.current;
       const label = labelRef.current;
       const line = lineRef.current;
       const cityDot = cityDotRef.current;
       if (
-        section === null ||
+        overlay === null ||
         label === null ||
         line === null ||
         cityDot === null
@@ -46,12 +47,12 @@ export function useLeaderLine(): LeaderLine {
         return;
       }
 
-      const sectionRect = section.getBoundingClientRect();
+      const overlayRect = overlay.getBoundingClientRect();
       const labelRect = label.getBoundingClientRect();
-      const startX = viewportX - sectionRect.left;
-      const startY = viewportY - sectionRect.top;
-      const endX = labelRect.left - sectionRect.left - LABEL_GAP_PX;
-      const endY = labelRect.top - sectionRect.top + labelRect.height / 2;
+      const startX = viewportX - overlayRect.left;
+      const startY = viewportY - overlayRect.top;
+      const endX = labelRect.left - overlayRect.left - LABEL_GAP_PX;
+      const endY = labelRect.top - overlayRect.top + labelRect.height / 2;
 
       line.setAttribute(
         "points",
@@ -66,5 +67,5 @@ export function useLeaderLine(): LeaderLine {
     [],
   );
 
-  return { sectionRef, labelRef, lineRef, cityDotRef, drawFrom };
+  return { overlayRef, labelRef, lineRef, cityDotRef, drawFrom };
 }

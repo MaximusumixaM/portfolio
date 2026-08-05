@@ -6,6 +6,12 @@ import type ThreeGlobe from "three-globe";
 
 import { teardropFillGeometry, teardropOutlineGeometry } from "./pinShape";
 
+import {
+  PHASES,
+  easeSettle,
+  getHeroProgress,
+  phase,
+} from "@/components/app/max-hero/heroTransition";
 import type { ResolvedProject } from "@/types/project";
 
 /** Pin height in globe units (the globe's radius is 100). */
@@ -86,6 +92,7 @@ function ProjectPinMarker({
   onSelect,
 }: ProjectPinMarkerProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const markerRef = useRef<THREE.Group>(null);
   const outlineMaterialRef = useRef<THREE.LineBasicMaterial>(null);
   const fillMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -101,11 +108,20 @@ function ProjectPinMarker({
   // The globe spins under a fixed camera, so a pin's own direction tells us which side it's on.
   useFrame(() => {
     const group = groupRef.current;
-    if (group === null) return;
+    const marker = markerRef.current;
+    if (group === null || marker === null) return;
+
+    // Pins are the last beat of the intro: they pop up once the map has finished drawing itself.
+    const appear = easeSettle(phase(getHeroProgress(), PHASES.reveal));
+    group.visible = appear > 0.01;
+    if (!group.visible) return;
+    marker.scale.setScalar(
+      PIN_HEIGHT * (isSelected ? SELECTED_SCALE : 1) * appear,
+    );
 
     const isFacingCamera =
       group.getWorldPosition(worldPosition).normalize().z > 0;
-    const opacity = isFacingCamera ? 1 : BEHIND_OPACITY;
+    const opacity = (isFacingCamera ? 1 : BEHIND_OPACITY) * appear;
 
     if (outlineMaterialRef.current !== null) {
       outlineMaterialRef.current.opacity = opacity;
@@ -116,9 +132,9 @@ function ProjectPinMarker({
   });
 
   return (
-    <group ref={groupRef} position={position}>
+    <group ref={groupRef} position={position} visible={false}>
       <Billboard>
-        <group scale={PIN_HEIGHT * (isSelected ? SELECTED_SCALE : 1)}>
+        <group ref={markerRef}>
           <lineLoop geometry={teardropOutlineGeometry} renderOrder={10}>
             <lineBasicMaterial
               ref={outlineMaterialRef}

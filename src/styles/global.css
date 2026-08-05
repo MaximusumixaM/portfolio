@@ -154,6 +154,8 @@
   --text-heading-sm--line-height: 1.75rem; /* 28px */
 
   /* Font weights */
+  --font-weight-extralight: 200;
+  --font-weight-light: 300;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
@@ -182,6 +184,8 @@
 
   --color-foreground-default: var(--theme-fg-default);
   --color-foreground-default-hover: var(--theme-fg-default-hover);
+  --color-foreground-secondary: var(--theme-fg-secondary);
+  --color-foreground-tertiary: var(--theme-fg-tertiary);
   --color-foreground-accent-default: var(--theme-fg-accent-default);
   --color-foreground-on-accent: var(--theme-fg-on-accent);
 

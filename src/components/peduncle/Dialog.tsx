@@ -18,7 +18,8 @@ export function DialogContent({
 }: DialogContentProps) {
   return (
     <DialogPrimitive.Portal>
-      {/* z-50 clears the fixed hero canvas (z-30) and HUD (z-40) so the backdrop dims them. */}
+      {/* z-50 clears the fixed scene canvas (z-20), leader line (z-30) and HUD (z-40), so the
+          backdrop dims all of them. */}
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
       <DialogPrimitive.Content
         className={cn(

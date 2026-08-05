@@ -10,6 +10,8 @@
   /* foreground */
   --theme-fg-default: var(--neutral-950);
   --theme-fg-default-hover: var(--neutral-700);
+  --theme-fg-secondary: var(--neutral-700);
+  --theme-fg-tertiary: var(--neutral-500);
   --theme-fg-accent-default: var(--blue-600);
   --theme-fg-on-accent: var(--neutral-50);
 
@@ -31,6 +33,8 @@
     /* foreground */
     --theme-fg-default: var(--neutral-50);
     --theme-fg-default-hover: var(--neutral-300);
+    --theme-fg-secondary: var(--neutral-300);
+    --theme-fg-tertiary: var(--neutral-400);
     --theme-fg-accent-default: var(--blue-400);
     --theme-fg-on-accent: var(--neutral-50);
 

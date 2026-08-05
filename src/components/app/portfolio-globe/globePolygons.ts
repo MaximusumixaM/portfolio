@@ -86,6 +86,27 @@ export async function loadGlobePolygons(): Promise<GlobePolygon[]> {
   ];
 }
 
+/**
+ * The shared canvas keeps ACES tone mapping for the wordmark's clearcoat, which would shift the
+ * map off its token colours. three-globe builds the layer's materials itself, so opt them out here.
+ */
+export function disableToneMapping(root: THREE.Object3D): void {
+  root.traverse((object) => {
+    if (!hasMaterial(object)) return;
+    const materials = Array.isArray(object.material)
+      ? object.material
+      : [object.material];
+    for (const material of materials) material.toneMapped = false;
+  });
+}
+
+/** Meshes, lines and points all carry one; `Object3D` itself doesn't. */
+function hasMaterial(
+  object: THREE.Object3D,
+): object is THREE.Object3D & { material: THREE.Material | THREE.Material[] } {
+  return "material" in object;
+}
+
 function rgba(color: THREE.Color, alpha: number): string {
   const r = Math.round(color.r * 255);
   const g = Math.round(color.g * 255);
