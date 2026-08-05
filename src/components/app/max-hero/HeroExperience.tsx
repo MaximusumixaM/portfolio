@@ -74,7 +74,9 @@ export function HeroExperience({ projects, about }: HeroExperienceProps) {
             )}
             inert={!isRevealed}
           >
-            <div className="pointer-events-auto w-full max-w-prose md:w-2/5">
+            {/* A true half of the screen once there's room for it; `max-w-prose` only holds the
+                line length in on stacked layouts, where the block spans the full width. */}
+            <div className="pointer-events-auto w-full max-w-prose md:w-1/2 md:max-w-none">
               {activeProject !== undefined && (
                 <ProjectPanel
                   key={activeProject.slug}

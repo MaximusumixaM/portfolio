@@ -18,7 +18,11 @@ import {
   polygonCapColor,
   type GlobePolygon,
 } from "./globePolygons";
-import { rotationForCoords, shortestAngleTo } from "./globeRotation";
+import {
+  aimSpinForCoords,
+  rotationForCoords,
+  shortestAngleTo,
+} from "./globeRotation";
 import { Graticule } from "./Graticule";
 import { PIN_ALTITUDE, ProjectPins } from "./ProjectPins";
 
@@ -29,6 +33,7 @@ import {
   phase,
 } from "@/components/app/max-hero/heroTransition";
 import {
+  CAMERA_DISTANCE,
   FORMATION_SPHERE_RADIUS,
   STACKED_BREAKPOINT_PX,
 } from "@/components/app/max-hero/sceneMetrics";
@@ -49,8 +54,10 @@ const SURFACE_RANGE: readonly [number, number] = [
   PHASES.graticule[0] + 0.3 * (PHASES.graticule[1] - PHASES.graticule[0]),
 ];
 
+/** Where the selected pin sits across the drawn disc: 0 is its centre, 1 the right-hand limb. */
+const AIM_ACROSS_DISC = 0;
+
 const anchorPosition = new THREE.Vector3();
-const facingDirection = new THREE.Vector3();
 
 interface GlobeScreenCircle {
   centreX: number;
@@ -178,12 +185,23 @@ export function GlobeStage({
         radius: Math.min(viewport.width * 0.34, viewport.height * 0.2),
       };
     }
+    // Centre stays put as the radius comes down, so the shrink opens up room towards the panel.
     return {
       x: -viewport.width * 0.24,
       y: 0,
-      radius: Math.min(viewport.height * 0.36, viewport.width * 0.24),
+      radius: Math.min(viewport.height * 0.32, viewport.width * 0.22),
     };
   }, [size.width, viewport.width, viewport.height]);
+
+  const framing = useMemo(
+    () => ({
+      centreX: restingLayout.x,
+      radius: restingLayout.radius,
+      cameraDistance: CAMERA_DISTANCE,
+      across: AIM_ACROSS_DISC,
+    }),
+    [restingLayout],
+  );
 
   // Countries read as outlines only — caps painted the page colour — except the selected
   // project's country and province, which take a wash of the foreground token.
@@ -222,16 +240,18 @@ export function GlobeStage({
     isRevealed,
   ]);
 
-  // Selecting a project re-aims the globe; the frame loop eases towards this target.
+  // Selecting a project re-aims the globe; the frame loop eases towards this target. The spin on
+  // top of the aim is framing — it centres the pin on the disc as drawn, leaving the poles upright.
   useEffect(() => {
     if (selectedProject === undefined) return;
     const { lat, lng } = selectedProject.location;
     const { x, y } = rotationForCoords(lat, lng);
+    const spin = aimSpinForCoords(lat, framing);
     targetRotation.current = {
       x,
-      y: shortestAngleTo(targetRotation.current.y, y),
+      y: shortestAngleTo(targetRotation.current.y, y + spin),
     };
-  }, [selectedProject]);
+  }, [selectedProject, framing]);
 
   useDragToRotate(
     isRevealed,
@@ -305,12 +325,11 @@ export function GlobeStage({
     // Where the selected pin's tip lands on screen, for the leader line to start from.
     const { lat, lng } = selectedProject.location;
     const { x, y, z } = globe.getCoords(lat, lng, PIN_ALTITUDE);
-    // The rotation group only spins, so its Euler alone settles which side of the globe a pin is on.
-    const isFacingCamera =
-      facingDirection.set(x, y, z).applyEuler(group.rotation).z > 0;
-
     anchorPosition.set(x, y, z);
     group.localToWorld(anchorPosition);
+    // The globe's centre rides z = 0, so world depth alone settles which side a pin is on.
+    const isFacingCamera = anchorPosition.z > 0;
+
     anchorPosition.project(state.camera);
     onAnchorMove(
       canvas.left + ((anchorPosition.x + 1) / 2) * canvas.width,
