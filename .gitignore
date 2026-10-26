@@ -157,3 +157,6 @@ dist/
 
 # Claude Code local settings
 .claude/
+
+# Planning docs (local only)
+docs/
