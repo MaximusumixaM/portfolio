@@ -7,17 +7,17 @@ const REGIONS_URL = "/geo/regions.geojson";
 export const COUNTRY_ALTITUDE = 0.004;
 export const REGION_ALTITUDE = 0.006;
 
-/** Wash strengths for the selected project's country and its province/state. */
-const COUNTRY_TINT_ALPHA = 0.1;
-const REGION_TINT_ALPHA = 0.5;
-
 const TRANSPARENT = "rgba(0, 0, 0, 0)";
+/** Province lines sit back from the national borders they subdivide. */
+const REGION_STROKE_ALPHA = 0.4;
 
 export type PolygonTier = "country" | "region";
 
 export interface GlobePolygon {
   /** ISO_A3 for countries, ISO 3166-2 for regions. */
   code: string;
+  /** ISO_A3 of the country it belongs to (its own code, for a country). */
+  country: string;
   tier: PolygonTier;
   /** Read by three-globe's default `polygonGeoJsonGeometry` accessor. */
   geometry: object;
@@ -65,7 +65,7 @@ function readCode(feature: GeoFeature, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
-/** Country outlines plus the handful of provinces/states we can highlight, as one flat layer. */
+/** Country outlines plus the provinces/states of the journey's countries, as one flat layer. */
 export async function loadGlobePolygons(): Promise<GlobePolygon[]> {
   const [countries, regions] = await Promise.all([
     fetchFeatures(COUNTRIES_URL),
@@ -75,11 +75,13 @@ export async function loadGlobePolygons(): Promise<GlobePolygon[]> {
   return [
     ...countries.map((feature) => ({
       code: readCode(feature, "ISO_A3"),
+      country: readCode(feature, "ISO_A3"),
       tier: "country" as const,
       geometry: feature.geometry,
     })),
     ...regions.map((feature) => ({
       code: readCode(feature, "iso"),
+      country: readCode(feature, "country"),
       tier: "region" as const,
       geometry: feature.geometry,
     })),
@@ -108,32 +110,28 @@ function hasMaterial(
 }
 
 function rgba(color: THREE.Color, alpha: number): string {
-  const r = Math.round(color.r * 255);
-  const g = Math.round(color.g * 255);
-  const b = Math.round(color.b * 255);
+  // THREE.Color holds linear values; CSS strings are sRGB.
+  const srgb = color.getRGB({ r: 0, g: 0, b: 0 }, THREE.SRGBColorSpace);
+  const r = Math.round(srgb.r * 255);
+  const g = Math.round(srgb.g * 255);
+  const b = Math.round(srgb.b * 255);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-export interface PolygonPalette {
-  /** The page-coloured fill that leaves only country strokes reading. */
-  surface: THREE.Color;
-  /** Foreground token — the outlines, and the wash over the selected country and region. */
-  foreground: THREE.Color;
-  selectedCountryCode: string | undefined;
-  selectedRegionCode: string | undefined;
+/** Stroke for one polygon: full strength for a national border, faded for a province line. */
+export function polygonStrokeColor(
+  polygon: GlobePolygon,
+  foreground: THREE.Color,
+): string {
+  return polygon.tier === "region"
+    ? rgba(foreground, REGION_STROKE_ALPHA)
+    : `#${foreground.getHexString()}`;
 }
 
-/** Cap fill for one polygon: a wash when it's the selection, page colour or nothing otherwise. */
+/** Cap fill for one polygon: countries take `surface` (the page colour), regions stay clear. */
 export function polygonCapColor(
   polygon: GlobePolygon,
-  palette: PolygonPalette,
+  surface: THREE.Color,
 ): string {
-  if (polygon.tier === "region") {
-    return polygon.code === palette.selectedRegionCode
-      ? rgba(palette.foreground, REGION_TINT_ALPHA)
-      : TRANSPARENT;
-  }
-  return polygon.code === palette.selectedCountryCode
-    ? rgba(palette.foreground, COUNTRY_TINT_ALPHA)
-    : `#${palette.surface.getHexString()}`;
+  return polygon.tier === "region" ? TRANSPARENT : `#${surface.getHexString()}`;
 }

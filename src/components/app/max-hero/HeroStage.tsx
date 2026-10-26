@@ -7,9 +7,6 @@ import {
   NAV_LOGO_CENTER_Y_PX,
   NAV_LOGO_HEIGHT_PX,
   PHASES,
-  easeSettle,
-  getHeroProgress,
-  phase,
 } from "./heroTransition";
 import { buildWordmark, type LetterGeometry } from "./letterGeometries";
 import {
@@ -18,7 +15,13 @@ import {
   FORMATION_SPHERE_RADIUS,
 } from "./sceneMetrics";
 import { usePointerRef } from "./usePointerRef";
-import { usePrefersReducedMotion } from "./usePrefersReducedMotion";
+
+import {
+  easeSettle,
+  getSectionProgress,
+  phase,
+} from "@/components/app/scroll/timeline";
+import { usePrefersReducedMotion } from "@/components/lib/usePrefersReducedMotion";
 
 interface LetterItem {
   letter: LetterGeometry;
@@ -105,7 +108,7 @@ export function HeroStage() {
 
   useFrame((state, delta) => {
     const reduced = reducedMotionRef.current;
-    const progress = getHeroProgress();
+    const progress = getSectionProgress("hero");
     const arcs = phase(progress, PHASES.arcs);
     const rise = easeSettle(phase(progress, PHASES.rise));
     const settle = easeSettle(phase(progress, FLATTEN_RANGE));

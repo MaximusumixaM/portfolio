@@ -3,11 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import ThreeGlobe from "three-globe";
 
-import {
-  collectCountryOutlines,
-  drawCountryOutlines,
-  type CountryOutline,
-} from "./countryReveal";
+import { collectFills, shadeCountry, shadeRegion } from "./fillShade";
 import { FormationRing } from "./FormationRing";
 import {
   COUNTRY_ALTITUDE,
@@ -16,35 +12,48 @@ import {
   isGlobePolygon,
   loadGlobePolygons,
   polygonCapColor,
+  polygonStrokeColor,
   type GlobePolygon,
 } from "./globePolygons";
 import {
   aimSpinForCoords,
   rotationForCoords,
   shortestAngleTo,
+  uprightRoll,
 } from "./globeRotation";
 import { Graticule } from "./Graticule";
-import { PIN_ALTITUDE, ProjectPins } from "./ProjectPins";
+import { JourneyPin, PIN_ALTITUDE, PIN_HEIGHT } from "./JourneyPin";
+import {
+  collectOutlines,
+  drawOutlines,
+  type PolygonOutline,
+} from "./outlineReveal";
 
 import {
-  PHASES,
-  easeSettle,
-  getHeroProgress,
-  phase,
-} from "@/components/app/max-hero/heroTransition";
+  arrivalMarks,
+  isJourneyOver,
+  journeyScreens,
+  type JourneyLayout,
+} from "@/components/app/journey/journeyLayout";
+import { getJourneySpin } from "@/components/app/journey/journeySpin";
+import { PHASES } from "@/components/app/max-hero/heroTransition";
 import {
   CAMERA_DISTANCE,
   FORMATION_SPHERE_RADIUS,
   STACKED_BREAKPOINT_PX,
 } from "@/components/app/max-hero/sceneMetrics";
+import {
+  easeSettle,
+  getSectionProgress,
+  phase,
+} from "@/components/app/scroll/timeline";
 import { useThemeColor } from "@/components/lib/useThemeColor";
-import type { ResolvedProject } from "@/types/project";
 
-/** Rotation easing rate — higher settles on the selected pin faster. */
+/** Rotation easing rate — higher settles on the aimed-at coordinate faster. */
 const FOCUS_DAMPING = 3.2;
 const DRAG_SENSITIVITY = 0.005;
 const MAX_TILT_RAD = (75 * Math.PI) / 180;
-/** Pointer travel (px) past which a press counts as a drag rather than a pin click. */
+/** Pointer travel (px) past which a press counts as a drag rather than a click. */
 const DRAG_SLOP_PX = 5;
 /** Grab margin round the globe's silhouette, so the edge is comfortable to catch. */
 const DRAG_HIT_MARGIN = 1.08;
@@ -54,10 +63,31 @@ const SURFACE_RANGE: readonly [number, number] = [
   PHASES.graticule[0] + 0.3 * (PHASES.graticule[1] - PHASES.graticule[0]),
 ];
 
-/** Where the selected pin sits across the drawn disc: 0 is its centre, 1 the right-hand limb. */
+/** Where the aimed-at coordinate sits across the drawn disc: 0 is its centre, 1 the right-hand limb. */
 const AIM_ACROSS_DISC = 0;
 
-const anchorPosition = new THREE.Vector3();
+interface Rotation {
+  x: number;
+  y: number;
+}
+
+export interface GlobeStop {
+  lat: number;
+  lng: number;
+  /** ISO_A3 of the stop's country, whose provinces draw in and fill shades lightly on arrival. */
+  countryCode: string;
+  /** ISO 3166-2 of the stop's own province, which shades in on arrival. */
+  regionCode: string;
+}
+
+/** The spin the globe last set off on, and the rotation it set off from. */
+interface SpinAim {
+  serial: number;
+  from: number;
+  fromRotation: Rotation;
+}
+
+const pinTip = new THREE.Vector3();
 
 interface GlobeScreenCircle {
   centreX: number;
@@ -88,26 +118,22 @@ function useGlobePolygons(): GlobePolygon[] {
 }
 
 export interface GlobeStageProps {
-  projects: ResolvedProject[];
-  activeSlug: string | undefined;
   /** True once the intro has handed the globe over to the visitor. */
   isRevealed: boolean;
-  onSelect: (slug: string) => void;
-  /** Called each frame with the selected pin's tip, in viewport space. */
-  onAnchorMove: (
-    viewportX: number,
-    viewportY: number,
-    isVisible: boolean,
-  ) => void;
+  /** Journey stops, in order; the globe faces the first until the journey moves it on. */
+  stops: readonly GlobeStop[];
+  layout: JourneyLayout;
+  /** Called each frame with the pin's tip in viewport space, and how far the leader line has drawn (0 hides it). */
+  onAnchorMove: (viewportX: number, viewportY: number, drawn: number) => void;
 }
 
 // The globe half of the scene: it grows inside the circle the formation arcs drew, slides out to
-// its resting place as the wordmark leaves, then draws its borders and hands over to the visitor.
+// its resting place as the wordmark leaves, draws its borders, then spins from stop to stop on the
+// journey before leaving for the projects.
 export function GlobeStage({
-  projects,
-  activeSlug,
   isRevealed,
-  onSelect,
+  stops,
+  layout,
   onAnchorMove,
 }: GlobeStageProps) {
   const gl = useThree((state) => state.gl);
@@ -115,15 +141,28 @@ export function GlobeStage({
   const viewport = useThree((state) => state.viewport);
 
   const placementRef = useRef<THREE.Group>(null);
+  const rollRef = useRef<THREE.Group>(null);
   const rotationRef = useRef<THREE.Group>(null);
-  const targetRotation = useRef({ x: 0, y: 0 });
-  const dragDistance = useRef(0);
+  const targetRotation = useRef<Rotation>({ x: 0, y: 0 });
+  /** Where the visitor has dragged the globe to, on top of the journey's aim. */
+  const dragOffset = useRef<Rotation>({ x: 0, y: 0 });
+  const spinAim = useRef<SpinAim>({
+    serial: -1,
+    from: -1,
+    fromRotation: { x: 0, y: 0 },
+  });
+  const spinTarget = useRef<Rotation>({ x: 0, y: 0 });
   const screenCircle = useRef<GlobeScreenCircle>({
     centreX: 0,
     centreY: 0,
     radius: 0,
   });
-  const outlines = useRef<CountryOutline[]>([]);
+  const pinRef = useRef<THREE.Group>(null);
+  const countryOutlines = useRef<PolygonOutline[]>([]);
+  /** Each journey country's province outlines, drawn as it arrives. */
+  const provinceOutlines = useRef(new Map<string, PolygonOutline[]>());
+  const countryFills = useRef(new Map<string, THREE.MeshBasicMaterial[]>());
+  const regionFills = useRef(new Map<string, THREE.MeshBasicMaterial[]>());
 
   const polygons = useGlobePolygons();
   const strokeColor = useThemeColor("--color-foreground-default", "#000000");
@@ -161,22 +200,27 @@ export function GlobeStage({
 
   useEffect(() => {
     globe.polygonsData(polygons);
-    outlines.current = [];
+    countryOutlines.current = [];
   }, [globe, polygons]);
 
-  const selectedProject = projects.find(
-    (project) => project.slug === activeSlug,
+  const journeyCountries = useMemo(
+    () => new Set(stops.map((stop) => stop.countryCode)),
+    [stops],
+  );
+  const journeyRegions = useMemo(
+    () => new Set(stops.map((stop) => stop.regionCode)),
+    [stops],
   );
 
   /** Where the globe faces while its borders draw — borders spread out from here. */
   const drawFocus = useMemo(() => {
-    const first = projects[0];
+    const first = stops[0];
     if (first === undefined) return new THREE.Vector3(0, 0, 1);
-    const { x, y, z } = globe.getCoords(first.location.lat, first.location.lng);
+    const { x, y, z } = globe.getCoords(first.lat, first.lng);
     return new THREE.Vector3(x, y, z).normalize();
-  }, [globe, projects]);
+  }, [globe, stops]);
 
-  /** Resting size and place: beside the panel on wide screens, above it when stacked. */
+  /** Resting size and place: left of centre on wide screens, upper half when stacked. */
   const restingLayout = useMemo(() => {
     if (size.width < STACKED_BREAKPOINT_PX) {
       return {
@@ -185,7 +229,7 @@ export function GlobeStage({
         radius: Math.min(viewport.width * 0.34, viewport.height * 0.2),
       };
     }
-    // Centre stays put as the radius comes down, so the shrink opens up room towards the panel.
+    // Centre stays put as the radius comes down, so the shrink opens up room to the right.
     return {
       x: -viewport.width * 0.24,
       y: 0,
@@ -203,70 +247,53 @@ export function GlobeStage({
     [restingLayout],
   );
 
-  // Countries read as outlines only — caps painted the page colour — except the selected
-  // project's country and province, which take a wash of the foreground token.
+  // Countries read as outlines only — caps painted the page colour, provinces as fainter lines.
   useEffect(() => {
-    const palette = {
-      surface: surfaceColor,
-      foreground: strokeColor,
-      // The wash belongs to the finished map, not to the borders drawing themselves in.
-      selectedCountryCode: isRevealed
-        ? selectedProject?.location.countryCode
-        : undefined,
-      selectedRegionCode: isRevealed
-        ? selectedProject?.location.regionCode
-        : undefined,
-    };
     const fill = (polygon: object) =>
-      isGlobePolygon(polygon) ? polygonCapColor(polygon, palette) : "";
+      isGlobePolygon(polygon) ? polygonCapColor(polygon, surfaceColor) : "";
 
     globe
       .globeMaterial(surfaceMaterial)
       .polygonCapColor(fill)
       .polygonSideColor(fill)
-      // Only national borders are drawn; a region shows through its fill alone.
       .polygonStrokeColor((polygon) =>
-        isGlobePolygon(polygon) && polygon.tier === "region"
-          ? false
-          : `#${strokeColor.getHexString()}`,
+        isGlobePolygon(polygon)
+          ? polygonStrokeColor(polygon, strokeColor)
+          : false,
       );
     disableToneMapping(globe);
-  }, [
-    globe,
-    surfaceMaterial,
-    surfaceColor,
-    strokeColor,
-    selectedProject,
-    isRevealed,
-  ]);
+  }, [globe, surfaceMaterial, surfaceColor, strokeColor]);
 
-  // Selecting a project re-aims the globe; the frame loop eases towards this target. The spin on
-  // top of the aim is framing — it centres the pin on the disc as drawn, leaving the poles upright.
-  useEffect(() => {
-    if (selectedProject === undefined) return;
-    const { lat, lng } = selectedProject.location;
-    const { x, y } = rotationForCoords(lat, lng);
-    const spin = aimSpinForCoords(lat, framing);
-    targetRotation.current = {
-      x,
-      y: shortestAngleTo(targetRotation.current.y, y + spin),
-    };
-  }, [selectedProject, framing]);
+  /** Globe-space direction of a stop, which its provinces draw outward from. */
+  function stopDirection(stop: GlobeStop): THREE.Vector3 {
+    const { x, y, z } = globe.getCoords(stop.lat, stop.lng);
+    return new THREE.Vector3(x, y, z).normalize();
+  }
+
+  /** Rotation that faces a stop. The extra spin on top is framing — it centres the stop on the disc as drawn. */
+  function rotationForStop(stop: number): Rotation {
+    // Before the journey (-1) the globe already faces the first stop.
+    const place = stops[Math.max(0, stop)];
+    if (place === undefined) return { x: 0, y: 0 };
+    const { x, y } = rotationForCoords(place.lat, place.lng);
+    return { x, y: y + aimSpinForCoords(place.lat, framing) };
+  }
 
   useDragToRotate(
     isRevealed,
     rotationRef,
     targetRotation,
-    dragDistance,
+    dragOffset,
     screenCircle,
   );
 
   useFrame((state, delta) => {
     const placement = placementRef.current;
+    const roll = rollRef.current;
     const group = rotationRef.current;
-    if (placement === null || group === null) return;
+    if (placement === null || roll === null || group === null) return;
 
-    const progress = getHeroProgress();
+    const progress = getSectionProgress("hero");
 
     // Leave the centre once the cage is drawn, taking the formation ring along.
     const shift = easeSettle(phase(progress, PHASES.shift));
@@ -283,11 +310,95 @@ export function GlobeStage({
     surfaceMaterial.visible = surfacing > 0.001;
     surfaceMaterial.color.copy(pageColor).lerp(surfaceColor, surfacing);
 
-    if (outlines.current.length === 0 && polygons.length > 0) {
-      outlines.current = collectCountryOutlines(globe, drawFocus);
-      if (outlines.current.length > 0) disableToneMapping(globe);
+    if (countryOutlines.current.length === 0 && polygons.length > 0) {
+      countryOutlines.current = collectOutlines(
+        globe,
+        drawFocus,
+        (polygon) => polygon.tier === "country",
+      );
+      provinceOutlines.current = new Map(
+        stops.map((stop) => [
+          stop.countryCode,
+          collectOutlines(
+            globe,
+            stopDirection(stop),
+            (polygon) =>
+              polygon.tier === "region" && polygon.country === stop.countryCode,
+          ),
+        ]),
+      );
+      countryFills.current = collectFills(globe, (polygon) =>
+        polygon.tier === "country" && journeyCountries.has(polygon.country)
+          ? polygon.country
+          : undefined,
+      );
+      regionFills.current = collectFills(globe, (polygon) =>
+        polygon.tier === "region" && journeyRegions.has(polygon.code)
+          ? polygon.code
+          : undefined,
+      );
+      if (countryOutlines.current.length > 0) disableToneMapping(globe);
     }
-    drawCountryOutlines(outlines.current, phase(progress, PHASES.countries));
+    drawOutlines(countryOutlines.current, phase(progress, PHASES.countries));
+
+    // A chapter grows out of the globe: its provinces draw, the country and (more so) the city's
+    // province shade in, its pin rises.
+    const screens = journeyScreens(layout, getSectionProgress("about"));
+    const marks = arrivalMarks(layout, screens);
+    const markedStop = stops[marks.chapter];
+    for (const [country, outlines] of provinceOutlines.current) {
+      drawOutlines(
+        outlines,
+        country === markedStop?.countryCode ? marks.provinces : 0,
+      );
+    }
+    shadeCountry(
+      countryFills.current,
+      markedStop?.countryCode,
+      marks.shade,
+      surfaceColor,
+      strokeColor,
+    );
+    shadeRegion(
+      regionFills.current,
+      markedStop?.regionCode,
+      marks.shade,
+      strokeColor,
+    );
+
+    // Leaving for the projects: for now it simply goes, until the musket finale replaces this.
+    placement.visible = !isJourneyOver(layout, screens);
+
+    const spin = getJourneySpin();
+    const aim = spinAim.current;
+    if (spin.serial !== aim.serial) {
+      // A fresh spin sets off from wherever the globe is showing, drag included.
+      spinAim.current = {
+        serial: spin.serial,
+        from: spin.from,
+        fromRotation: { ...targetRotation.current },
+      };
+      dragOffset.current = { x: 0, y: 0 };
+    } else if (spin.from !== aim.from) {
+      // Reversed mid-turn: it now sets off from the stop it was heading to.
+      spinAim.current = {
+        ...aim,
+        from: spin.from,
+        fromRotation: spinTarget.current,
+      };
+    }
+    const from = spinAim.current.fromRotation;
+    const toStop = rotationForStop(spin.to);
+    spinTarget.current = { x: toStop.x, y: shortestAngleTo(from.y, toStop.y) };
+    const turned = easeSettle(spin.progress);
+    targetRotation.current = {
+      x:
+        THREE.MathUtils.lerp(from.x, spinTarget.current.x, turned) +
+        dragOffset.current.x,
+      y:
+        THREE.MathUtils.lerp(from.y, spinTarget.current.y, turned) +
+        dragOffset.current.y,
+    };
 
     group.rotation.x = THREE.MathUtils.damp(
       group.rotation.x,
@@ -300,6 +411,11 @@ export function GlobeStage({
       targetRotation.current.y,
       FOCUS_DAMPING,
       delta,
+    );
+    roll.rotation.z = uprightRoll(
+      placement.position.x,
+      group.rotation.x,
+      CAMERA_DISTANCE,
     );
 
     // Cache the globe's screen circle so a press can tell whether it landed on the globe.
@@ -314,61 +430,65 @@ export function GlobeStage({
         canvas.top +
         canvas.height / 2 -
         placement.position.y * pixelsPerWorldUnit,
-      radius: FORMATION_SPHERE_RADIUS * scale * pixelsPerWorldUnit,
+      radius: placement.visible
+        ? FORMATION_SPHERE_RADIUS * scale * pixelsPerWorldUnit
+        : 0,
     };
 
-    // Scrubbing back out of the reveal has to retire the leader line, or it hangs about on screen.
-    if (!isRevealed || selectedProject === undefined) {
-      onAnchorMove(0, 0, false);
+    const pin = pinRef.current;
+    if (pin === null) return;
+    const pinGrowth = easeSettle(marks.pin);
+    pin.visible = markedStop !== undefined && pinGrowth > 0.01;
+    if (markedStop === undefined || !pin.visible) {
+      onAnchorMove(0, 0, 0);
       return;
     }
-    // Where the selected pin's tip lands on screen, for the leader line to start from.
-    const { lat, lng } = selectedProject.location;
-    const { x, y, z } = globe.getCoords(lat, lng, PIN_ALTITUDE);
-    anchorPosition.set(x, y, z);
-    group.localToWorld(anchorPosition);
-    // The globe's centre rides z = 0, so world depth alone settles which side a pin is on.
-    const isFacingCamera = anchorPosition.z > 0;
+    const { x, y, z } = globe.getCoords(
+      markedStop.lat,
+      markedStop.lng,
+      PIN_ALTITUDE,
+    );
+    pin.position.set(x, y, z);
+    pin.scale.setScalar(PIN_HEIGHT * pinGrowth);
 
-    anchorPosition.project(state.camera);
+    // Where the pin's tip lands on screen, for the leader line to start from.
+    pinTip.set(x, y, z);
+    group.localToWorld(pinTip);
+    // The globe's centre rides z = 0, so world depth alone settles which side the pin is on.
+    const isFacingCamera = pinTip.z > 0;
+    pinTip.project(state.camera);
     onAnchorMove(
-      canvas.left + ((anchorPosition.x + 1) / 2) * canvas.width,
-      canvas.top + ((1 - anchorPosition.y) / 2) * canvas.height,
-      isFacingCamera,
+      canvas.left + ((pinTip.x + 1) / 2) * canvas.width,
+      canvas.top + ((1 - pinTip.y) / 2) * canvas.height,
+      isFacingCamera ? marks.line : 0,
     );
   });
 
   return (
     <group ref={placementRef}>
       <FormationRing />
-      <group ref={rotationRef} scale={FORMATION_SPHERE_RADIUS / globeRadius}>
-        <primitive object={globe} />
-        <Graticule radius={globeRadius} />
-        <ProjectPins
-          projects={projects}
-          globe={globe}
-          activeSlug={activeSlug}
-          color={strokeColor}
-          onSelect={(slug) => {
-            if (dragDistance.current > DRAG_SLOP_PX) return;
-            onSelect(slug);
-          }}
-        />
+      <group ref={rollRef}>
+        <group ref={rotationRef} scale={FORMATION_SPHERE_RADIUS / globeRadius}>
+          <primitive object={globe} />
+          <Graticule radius={globeRadius} />
+          <JourneyPin ref={pinRef} color={strokeColor} />
+        </group>
       </group>
     </group>
   );
 }
 
 /**
- * Pointer drag spins the globe, carrying the easing target along so it doesn't spring back.
- * The canvas is click-through (the panel sits over it), so presses are read off the window and
+ * Pointer drag spins the globe. It's kept as an offset on top of the journey's aim, so it doesn't
+ * spring back, and the next spin sets off from wherever it was left.
+ * The canvas is click-through (the nav sits over it), so presses are read off the window and
  * matched against the globe's own screen circle.
  */
 function useDragToRotate(
   isRevealed: boolean,
   groupRef: React.RefObject<THREE.Group | null>,
-  targetRotation: React.RefObject<{ x: number; y: number }>,
-  dragDistance: React.RefObject<number>,
+  targetRotation: React.RefObject<Rotation>,
+  dragOffset: React.RefObject<Rotation>,
   screenCircle: React.RefObject<GlobeScreenCircle>,
 ) {
   useEffect(() => {
@@ -376,6 +496,7 @@ function useDragToRotate(
 
     let pointerId: number | null = null;
     let isEngaged = false;
+    let dragDistance = 0;
     let lastX = 0;
     let lastY = 0;
     let totalX = 0;
@@ -392,7 +513,7 @@ function useDragToRotate(
       }
       pointerId = event.pointerId;
       isEngaged = false;
-      dragDistance.current = 0;
+      dragDistance = 0;
       totalX = 0;
       totalY = 0;
       lastX = event.clientX;
@@ -407,10 +528,10 @@ function useDragToRotate(
       lastY = event.clientY;
       totalX += deltaX;
       totalY += deltaY;
-      dragDistance.current += Math.abs(deltaX) + Math.abs(deltaY);
+      dragDistance += Math.abs(deltaX) + Math.abs(deltaY);
 
       if (!isEngaged) {
-        if (dragDistance.current <= DRAG_SLOP_PX) return;
+        if (dragDistance <= DRAG_SLOP_PX) return;
         // On touch, an upright swipe belongs to the page — only a sideways one spins the globe.
         if (
           event.pointerType === "touch" &&
@@ -429,9 +550,14 @@ function useDragToRotate(
         -MAX_TILT_RAD,
         MAX_TILT_RAD,
       );
+      const turn = deltaX * DRAG_SENSITIVITY;
+      dragOffset.current = {
+        x: dragOffset.current.x + tilt - targetRotation.current.x,
+        y: dragOffset.current.y + turn,
+      };
       targetRotation.current = {
         x: tilt,
-        y: targetRotation.current.y + deltaX * DRAG_SENSITIVITY,
+        y: targetRotation.current.y + turn,
       };
       group.rotation.x = tilt;
       group.rotation.y = targetRotation.current.y;
@@ -449,5 +575,5 @@ function useDragToRotate(
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [isRevealed, groupRef, targetRotation, dragDistance, screenCircle]);
+  }, [isRevealed, groupRef, targetRotation, dragOffset, screenCircle]);
 }

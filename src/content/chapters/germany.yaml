@@ -1,0 +1,10 @@
+order: 3
+title: Germany
+place:
+  label: Schwäbisch Gmünd, Germany
+  lat: 48.7999
+  lng: 9.7981
+countryCode: DEU
+regionCode: DE-BW
+theme: germany
+text: Placeholder text for Germany.

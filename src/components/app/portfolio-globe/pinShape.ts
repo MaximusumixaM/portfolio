@@ -25,12 +25,12 @@ function createTeardropShape(): THREE.Shape {
 
 const teardropShape = createTeardropShape();
 
-/** Outline of the teardrop, for the resting state. */
+/** Outline of the teardrop. */
 export const teardropOutlineGeometry = new THREE.BufferGeometry().setFromPoints(
   teardropShape.getPoints(ARC_SEGMENTS),
 );
 
-/** Filled teardrop, for the selected and hovered states. */
+/** Filled teardrop, inside the outline. */
 export const teardropFillGeometry = new THREE.ShapeGeometry(
   teardropShape,
   ARC_SEGMENTS,

@@ -2,12 +2,9 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import {
-  PHASES,
-  getHeroProgress,
-  phase,
-} from "@/components/app/max-hero/heroTransition";
+import { PHASES } from "@/components/app/max-hero/heroTransition";
 import { FORMATION_RING_RADIUS } from "@/components/app/max-hero/sceneMetrics";
+import { getSectionProgress, phase } from "@/components/app/scroll/timeline";
 import { useThemeColor } from "@/components/lib/useThemeColor";
 
 const ARC_SEGMENTS = 40;
@@ -73,7 +70,7 @@ export function FormationRing() {
   }, [geometries, material]);
 
   useFrame(() => {
-    const progress = getHeroProgress();
+    const progress = getSectionProgress("hero");
     const draw = phase(progress, PHASES.arcs);
     const opacity = 1 - phase(progress, FADE_RANGE);
 

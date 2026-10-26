@@ -3,21 +3,16 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import { useEffect } from "react";
 
-import {
-  HERO_TRACK_ID,
-  registerLenis,
-  setHeroProgress,
-} from "./heroTransition";
-import { usePrefersReducedMotion } from "./usePrefersReducedMotion";
+import { registerLenis } from "./smoothScroll";
+import { SECTION_IDS, sectionTrackId, setSectionProgress } from "./timeline";
 
-// Owns scroll: Lenis for feel + one ScrollTrigger emitting the 0–1 progress. Renders nothing; the hero is pinned via CSS `sticky` (ScrollTrigger's pin transform would break the fixed canvas).
-export function HeroScrollController() {
+import { usePrefersReducedMotion } from "@/components/lib/usePrefersReducedMotion";
+
+// Owns scroll: Lenis for feel + one ScrollTrigger per section track emitting its 0–1 progress. Renders nothing; sections pin via CSS `sticky` (ScrollTrigger's pin transform would break the fixed canvas).
+export function ScrollController() {
   const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
-    const track = document.getElementById(HERO_TRACK_ID);
-    if (track === null) return;
-
     gsap.registerPlugin(ScrollTrigger);
 
     // Reduced motion keeps native scrolling — smoothing retimes the user's own input.
@@ -36,18 +31,24 @@ export function HeroScrollController() {
       gsap.ticker.lagSmoothing(0);
     }
 
-    const trigger = ScrollTrigger.create({
-      trigger: track,
-      start: "top top",
-      end: "bottom bottom",
-      scrub: true,
-      onUpdate: (self) => {
-        setHeroProgress(self.progress);
-      },
+    const triggers = SECTION_IDS.flatMap((id) => {
+      const track = document.getElementById(sectionTrackId(id));
+      if (track === null) return [];
+      return [
+        ScrollTrigger.create({
+          trigger: track,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: true,
+          onUpdate: (self) => {
+            setSectionProgress(id, self.progress);
+          },
+        }),
+      ];
     });
 
     return () => {
-      trigger.kill();
+      for (const trigger of triggers) trigger.kill();
       if (onTick !== undefined) {
         gsap.ticker.remove(onTick);
         gsap.ticker.lagSmoothing(500, 33);

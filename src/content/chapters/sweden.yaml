@@ -1,0 +1,11 @@
+order: 2
+title: Sweden
+# Placeholder until Q6.1 picks the place.
+place:
+  label: Stockholm, Sweden
+  lat: 59.3293
+  lng: 18.0686
+countryCode: SWE
+regionCode: SE-AB
+theme: sweden
+text: Placeholder text for Sweden.

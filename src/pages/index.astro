@@ -1,24 +1,20 @@
 ---
-import exposeGif from "../assets/images/about/expose.gif";
-import { HeroExperience } from "../components/app/max-hero/HeroExperience";
-import { projects } from "../data/projects";
-import { resolveProjects } from "../data/resolve-project-images";
-import { bio, awards, socialLinks } from "../data/site";
+import { getCollection } from "astro:content";
+
+import { SiteExperience } from "../components/app/SiteExperience";
 import Layout from "../layouts/Layout.astro";
 
-const resolvedProjects = await resolveProjects(projects);
-const about = {
-  bio,
-  awards,
-  socialLinks: socialLinks.map((link) => ({
-    label: link.label,
-    href: link.href,
-    iconSrc: link.icon.src,
-  })),
-  photoSrc: exposeGif.src,
-};
+const chapters = (await getCollection("chapters"))
+  .sort((a, b) => a.data.order - b.data.order)
+  .map(({ id, data }) => ({ id, ...data }));
+// With no stops the journey has no length, so the globe would read as already gone.
+if (chapters.length === 0) {
+  throw new Error(
+    "No journey chapters loaded from src/content/chapters — check the files against the schema in src/content.config.ts",
+  );
+}
 ---
 
 <Layout>
-  <HeroExperience client:load projects={resolvedProjects} about={about} />
+  <SiteExperience client:load chapters={chapters} />
 </Layout>

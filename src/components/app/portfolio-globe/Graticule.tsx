@@ -2,12 +2,12 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { PHASES } from "@/components/app/max-hero/heroTransition";
 import {
-  PHASES,
   easeSettle,
-  getHeroProgress,
+  getSectionProgress,
   phase,
-} from "@/components/app/max-hero/heroTransition";
+} from "@/components/app/scroll/timeline";
 import { useThemeColor } from "@/components/lib/useThemeColor";
 
 /** Great circles through the poles; each one carries a meridian and its antimeridian. */
@@ -131,7 +131,7 @@ export function Graticule({ radius }: GraticuleProps) {
   }, [rings, material]);
 
   useFrame(() => {
-    const progress = getHeroProgress();
+    const progress = getSectionProgress("hero");
     const drawn = phase(progress, PHASES.graticule);
     const remaining = 1 - phase(progress, FADE_RANGE);
 

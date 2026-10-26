@@ -1,25 +1,84 @@
 /* Theme-aware roles mapped to base.css values; light is :root, dark overrides via prefers-color-scheme. */
 
+/* Registered so they compute to a resolved colour rather than a token stream — the canvas samples them. */
+@property --theme-bg-accent-default {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --theme-bg-accent-hover {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --theme-fg-accent-default {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --theme-border-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --theme-border-focus {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
 :root {
+  /* accent ramp — the current chapter's ramp, blended towards the next one's as the globe spins
+     between them (see the note at the end). `--theme-chapter-mix` is set by the spin. */
+  --theme-chapter-mix: 0%;
+  --theme-accent-from-400: var(--blue-400);
+  --theme-accent-from-500: var(--blue-500);
+  --theme-accent-from-600: var(--blue-600);
+  --theme-accent-from-700: var(--blue-700);
+  --theme-accent-to-400: var(--theme-accent-from-400);
+  --theme-accent-to-500: var(--theme-accent-from-500);
+  --theme-accent-to-600: var(--theme-accent-from-600);
+  --theme-accent-to-700: var(--theme-accent-from-700);
+  --theme-accent-400: color-mix(
+    in oklch,
+    var(--theme-accent-from-400),
+    var(--theme-accent-to-400) var(--theme-chapter-mix)
+  );
+  --theme-accent-500: color-mix(
+    in oklch,
+    var(--theme-accent-from-500),
+    var(--theme-accent-to-500) var(--theme-chapter-mix)
+  );
+  --theme-accent-600: color-mix(
+    in oklch,
+    var(--theme-accent-from-600),
+    var(--theme-accent-to-600) var(--theme-chapter-mix)
+  );
+  --theme-accent-700: color-mix(
+    in oklch,
+    var(--theme-accent-from-700),
+    var(--theme-accent-to-700) var(--theme-chapter-mix)
+  );
+
   /* background */
   --theme-bg-default: var(--neutral-50);
   --theme-bg-default-hover: var(--neutral-100);
-  --theme-bg-accent-default: var(--blue-600);
-  --theme-bg-accent-hover: var(--blue-700);
+  --theme-bg-accent-default: var(--theme-accent-600);
+  --theme-bg-accent-hover: var(--theme-accent-700);
 
   /* foreground */
   --theme-fg-default: var(--neutral-950);
   --theme-fg-default-hover: var(--neutral-700);
   --theme-fg-secondary: var(--neutral-700);
   --theme-fg-tertiary: var(--neutral-500);
-  --theme-fg-accent-default: var(--blue-600);
+  --theme-fg-accent-default: var(--theme-accent-600);
   --theme-fg-on-accent: var(--neutral-50);
 
   /* border */
   --theme-border-default: var(--neutral-200);
   --theme-border-strong: var(--neutral-400);
-  --theme-border-accent: var(--blue-600);
-  --theme-border-focus: var(--blue-600);
+  --theme-border-accent: var(--theme-accent-600);
+  --theme-border-focus: var(--theme-accent-600);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,21 +86,25 @@
     /* background */
     --theme-bg-default: var(--neutral-950);
     --theme-bg-default-hover: var(--neutral-900);
-    --theme-bg-accent-default: var(--blue-600);
-    --theme-bg-accent-hover: var(--blue-500);
+    --theme-bg-accent-default: var(--theme-accent-600);
+    --theme-bg-accent-hover: var(--theme-accent-500);
 
     /* foreground */
     --theme-fg-default: var(--neutral-50);
     --theme-fg-default-hover: var(--neutral-300);
     --theme-fg-secondary: var(--neutral-300);
     --theme-fg-tertiary: var(--neutral-400);
-    --theme-fg-accent-default: var(--blue-400);
+    --theme-fg-accent-default: var(--theme-accent-400);
     --theme-fg-on-accent: var(--neutral-50);
 
     /* border */
     --theme-border-default: var(--neutral-800);
     --theme-border-strong: var(--neutral-600);
-    --theme-border-accent: var(--blue-400);
-    --theme-border-focus: var(--blue-400);
+    --theme-border-accent: var(--theme-accent-400);
+    --theme-border-focus: var(--theme-accent-400);
   }
 }
+
+/* Chapters repoint only the accent ramp (`--theme-accent-from-*` under `:root[data-chapter="…"]`,
+   `--theme-accent-to-*` under `:root[data-chapter-next="…"]`); neutrals keep following the colour
+   scheme. No chapter has its palette yet, so every chapter blends default into default. */

@@ -4,11 +4,11 @@ import {
   NAV_LOGO_HEIGHT_PX,
   NAV_PILL_APPEAR_AT,
   NAV_PILL_BORDER_AT,
-  useHeroPast,
 } from "./heroTransition";
 import { BORDER_DRAW_MS, NavPillBorder } from "./NavPillBorder";
 
 import { HockeyGame } from "@/components/app/HockeyGame";
+import { useSectionPast } from "@/components/app/scroll/timeline";
 import { cn } from "@/components/lib/utils";
 import { Button } from "@/components/peduncle/Button";
 import {
@@ -28,13 +28,14 @@ interface Size {
 }
 
 export interface NavPillProps {
-  onOpenAbout: () => void;
+  onAbout: () => void;
+  onProjects: () => void;
 }
 
 // Resting place for the settled wordmark (the 3D logo animates into this slot) and the easter-egg dialog trigger. Border is the SVG overlay so the pill starts borderless.
-export function NavPill({ onOpenAbout }: NavPillProps) {
-  const isSettled = useHeroPast(NAV_PILL_APPEAR_AT);
-  const isBorderDrawn = useHeroPast(NAV_PILL_BORDER_AT);
+export function NavPill({ onAbout, onProjects }: NavPillProps) {
+  const isSettled = useSectionPast("hero", NAV_PILL_APPEAR_AT);
+  const isBorderDrawn = useSectionPast("hero", NAV_PILL_BORDER_AT);
   // The side actions unfold only once the pill's own border has finished closing.
   const areActionsShown = useDelayed(isBorderDrawn, BORDER_DRAW_MS);
 
@@ -54,8 +55,12 @@ export function NavPill({ onOpenAbout }: NavPillProps) {
         {/* Only the wordmark's pill takes part in the layout, so it stays dead centre however
             wide the actions flanking it turn out to be. */}
         <div className="relative">
-          {/* Placeholder until this side earns a purpose. */}
-          <NavAction side="left" label="lorem" isShown={areActionsShown} />
+          <NavAction
+            side="left"
+            label="about"
+            isShown={areActionsShown}
+            onClick={onAbout}
+          />
 
           <DialogTrigger
             ref={pillRef}
@@ -82,9 +87,9 @@ export function NavPill({ onOpenAbout }: NavPillProps) {
 
           <NavAction
             side="right"
-            label="about"
+            label="projects"
             isShown={areActionsShown}
-            onClick={onOpenAbout}
+            onClick={onProjects}
           />
         </div>
       </nav>
@@ -115,7 +120,7 @@ interface NavActionProps {
   label: string;
   side: "left" | "right";
   isShown: boolean;
-  onClick?: () => void;
+  onClick: () => void;
 }
 
 /** A smaller pill that slides out from behind the wordmark's, drawing its own border as it lands. */

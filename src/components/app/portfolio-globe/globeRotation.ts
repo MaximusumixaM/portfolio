@@ -16,6 +16,25 @@ export function shortestAngleTo(current: number, target: number): number {
   return current + delta;
 }
 
+/** Past this the axis is nearly pointing at the camera, where "upright" stops meaning much. */
+const MAX_UPRIGHT_ROLL_SINE = Math.sin(30 * DEG_TO_RAD);
+
+/**
+ * Roll, in radians, that stands the globe's axis upright on screen. Off the camera's axis, a globe
+ * tilted towards the camera has its near pole magnified further out than its far pole, so the axis
+ * reads as leaning; solving for the roll that projects both poles to the same x gives this.
+ */
+export function uprightRoll(
+  centreX: number,
+  tilt: number,
+  cameraDistance: number,
+): number {
+  const sine = (centreX * Math.tan(tilt)) / cameraDistance;
+  return Math.asin(
+    Math.min(MAX_UPRIGHT_ROLL_SINE, Math.max(-MAX_UPRIGHT_ROLL_SINE, sine)),
+  );
+}
+
 export interface DiscFraming {
   /** How far the globe's centre sits off the camera's axis, in world units. */
   centreX: number;

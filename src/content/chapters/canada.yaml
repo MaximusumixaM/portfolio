@@ -1,0 +1,10 @@
+order: 1
+title: Canada
+place:
+  label: Vancouver, Canada
+  lat: 49.2827
+  lng: -123.1207
+countryCode: CAN
+regionCode: CA-BC
+theme: canada
+text: Placeholder text for Canada.

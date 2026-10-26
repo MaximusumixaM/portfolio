@@ -1,39 +1,42 @@
 import { Environment, Lightformer } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { HeroStage } from "./HeroStage";
 import { CAMERA_DISTANCE, CAMERA_FOV } from "./sceneMetrics";
 
+import type { Chapter } from "@/components/app/journey/chapter";
+import { JourneyDirector } from "@/components/app/journey/JourneyDirector";
+import type { JourneyLayout } from "@/components/app/journey/journeyLayout";
 import { GlobeStage } from "@/components/app/portfolio-globe/GlobeStage";
 import { cn } from "@/components/lib/utils";
-import type { ResolvedProject } from "@/types/project";
 
 export interface MaxSceneProps {
-  projects: ResolvedProject[];
-  activeSlug: string | undefined;
   isRevealed: boolean;
-  onSelect: (slug: string) => void;
-  onAnchorMove: (
-    viewportX: number,
-    viewportY: number,
-    isVisible: boolean,
-  ) => void;
-  /** The element r3f reads pointer events from, since the canvas itself is click-through. */
-  eventSource: HTMLElement;
+  chapters: readonly Chapter[];
+  layout: JourneyLayout;
+  onAnchorMove: (viewportX: number, viewportY: number, drawn: number) => void;
 }
 
 // The WebGL half of the page: the wordmark and the globe share one fixed, viewport-filling canvas
 // so the circle the arcs draw can hand straight over to the globe growing inside it.
 export function MaxScene({
-  projects,
-  activeSlug,
   isRevealed,
-  onSelect,
+  chapters,
+  layout,
   onAnchorMove,
-  eventSource,
 }: MaxSceneProps) {
   const [isReady, setIsReady] = useState(false);
+  const stops = useMemo(
+    () =>
+      chapters.map(({ place, countryCode, regionCode }) => ({
+        lat: place.lat,
+        lng: place.lng,
+        countryCode,
+        regionCode,
+      })),
+    [chapters],
+  );
 
   return (
     <div
@@ -43,11 +46,8 @@ export function MaxScene({
       )}
     >
       <Canvas
-        // Click-through, so the panel and nav keep their own hit targets; pin picking comes
-        // through `eventSource` instead, which sees the same presses before the DOM does.
+        // Click-through, so the nav keeps its own hit targets; the globe reads drags off the window.
         style={{ pointerEvents: "none" }}
-        eventSource={eventSource}
-        eventPrefix="client"
         camera={{ position: [0, 0, CAMERA_DISTANCE], fov: CAMERA_FOV }}
         gl={{ antialias: true, alpha: true }}
         dpr={[1, 2]}
@@ -64,11 +64,11 @@ export function MaxScene({
         />
 
         <HeroStage />
+        <JourneyDirector chapters={chapters} layout={layout} />
         <GlobeStage
-          projects={projects}
-          activeSlug={activeSlug}
           isRevealed={isRevealed}
-          onSelect={onSelect}
+          stops={stops}
+          layout={layout}
           onAnchorMove={onAnchorMove}
         />
 
