@@ -13,6 +13,13 @@ const chapters = defineCollection({
       lat: z.number().min(-90).max(90),
       lng: z.number().min(-180).max(180),
     }),
+    /** Where the zoomed view centres, when it shouldn't be the place itself (e.g. so a coastal city's country shows). */
+    focus: z
+      .object({
+        lat: z.number().min(-90).max(90),
+        lng: z.number().min(-180).max(180),
+      })
+      .optional(),
     /** ISO 3166-1 alpha-3, matching the globe's country and province data. */
     countryCode: z.string().length(3),
     /** ISO 3166-2 of the province/state the place is in, which the globe highlights. */

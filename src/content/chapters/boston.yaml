@@ -5,6 +5,10 @@ place:
   label: Boston, USA
   lat: 42.3601
   lng: -71.0589
+# Boston is on the coast, so centring on it shows mostly ocean; this centres the eastern US instead.
+focus:
+  lat: 41
+  lng: -90
 countryCode: USA
 regionCode: US-MA
 theme: boston

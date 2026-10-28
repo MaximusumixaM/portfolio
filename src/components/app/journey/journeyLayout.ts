@@ -10,11 +10,13 @@ const RETRACT_SCREENS = 0.2;
 const SPIN_SCREENS = 0.4;
 
 /**
- * Arrival beats, as sub-ranges of the arrive stretch: the country's province lines draw from the
- * city, the country (lightly) and the city's province shade in, the pin rises, and the leader line
- * runs out to the text.
+ * Arrival beats, as sub-ranges of the arrive stretch: the globe zooms in on the city while the
+ * country's province lines draw from it, the country (lightly) and the city's province shade in,
+ * the pin rises, and the leader line runs out to the text.
  */
 export const ARRIVAL = {
+  /** First chapter only: the zoom then holds for the whole journey. */
+  zoom: [0, 0.8],
   provinces: [0, 0.6],
   shade: [0.3, 0.7],
   pin: [0.35, 0.65],
@@ -108,6 +110,13 @@ export function arrivalMarks(
     line: phase(arrival, ARRIVAL.line) * remaining,
     isTextShown: arrival >= ARRIVAL.textAt && screens < segment.exitStart,
   };
+}
+
+/** Zoom on the globe, 0–1: in once with the first chapter's arrival, then held for the rest of the journey. */
+export function journeyZoom(layout: JourneyLayout, screens: number): number {
+  const first = layout.segments[0];
+  if (first === undefined) return 0;
+  return phase(phase(screens, [first.start, first.readStart]), ARRIVAL.zoom);
 }
 
 /**

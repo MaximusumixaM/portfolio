@@ -5,6 +5,11 @@ place:
   label: Stockholm, Sweden
   lat: 59.3293
   lng: 18.0686
+# Shares Germany's view: Sweden reads the right way up from there, and the two neighbours need no
+# turn between them.
+focus:
+  lat: 48.7999
+  lng: 9.7981
 countryCode: SWE
 regionCode: SE-AB
 theme: sweden

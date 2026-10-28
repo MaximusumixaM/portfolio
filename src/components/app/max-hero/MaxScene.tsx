@@ -29,9 +29,10 @@ export function MaxScene({
   const [isReady, setIsReady] = useState(false);
   const stops = useMemo(
     () =>
-      chapters.map(({ place, countryCode, regionCode }) => ({
+      chapters.map(({ place, focus, countryCode, regionCode }) => ({
         lat: place.lat,
         lng: place.lng,
+        focus: focus ?? { lat: place.lat, lng: place.lng },
         countryCode,
         regionCode,
       })),

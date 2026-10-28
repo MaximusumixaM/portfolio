@@ -16,11 +16,11 @@ import {
   type GlobePolygon,
 } from "./globePolygons";
 import {
-  aimSpinForCoords,
-  rotationForCoords,
+  faceCamera,
   shortestAngleTo,
-  uprightRoll,
+  type GlobeOrientation,
 } from "./globeRotation";
+import { ZOOM_MAGNIFICATION, zoomGlobe } from "./globeZoom";
 import { Graticule } from "./Graticule";
 import { JourneyPin, PIN_ALTITUDE, PIN_HEIGHT } from "./JourneyPin";
 import {
@@ -33,6 +33,7 @@ import {
   arrivalMarks,
   isJourneyOver,
   journeyScreens,
+  journeyZoom,
   type JourneyLayout,
 } from "@/components/app/journey/journeyLayout";
 import { getJourneySpin } from "@/components/app/journey/journeySpin";
@@ -63,17 +64,17 @@ const SURFACE_RANGE: readonly [number, number] = [
   PHASES.graticule[0] + 0.3 * (PHASES.graticule[1] - PHASES.graticule[0]),
 ];
 
-/** Where the aimed-at coordinate sits across the drawn disc: 0 is its centre, 1 the right-hand limb. */
-const AIM_ACROSS_DISC = 0;
+/** How far left of centre (as a share of the viewport width) a zoomed disc may reach, clear of the text. */
+const ZOOM_TEXT_CLEARANCE = 0.02;
 
-interface Rotation {
-  x: number;
-  y: number;
-}
+/** A little north of a focus, for its local north direction. */
+const NORTH_STEP_DEG = 0.5;
 
 export interface GlobeStop {
   lat: number;
   lng: number;
+  /** Where the view centres while the globe faces this stop (often the stop itself). */
+  focus: { lat: number; lng: number };
   /** ISO_A3 of the stop's country, whose provinces draw in and fill shades lightly on arrival. */
   countryCode: string;
   /** ISO 3166-2 of the stop's own province, which shades in on arrival. */
@@ -84,7 +85,7 @@ export interface GlobeStop {
 interface SpinAim {
   serial: number;
   from: number;
-  fromRotation: Rotation;
+  fromRotation: GlobeOrientation;
 }
 
 const pinTip = new THREE.Vector3();
@@ -143,15 +144,15 @@ export function GlobeStage({
   const placementRef = useRef<THREE.Group>(null);
   const rollRef = useRef<THREE.Group>(null);
   const rotationRef = useRef<THREE.Group>(null);
-  const targetRotation = useRef<Rotation>({ x: 0, y: 0 });
+  const targetRotation = useRef<GlobeOrientation>({ x: 0, y: 0, z: 0 });
   /** Where the visitor has dragged the globe to, on top of the journey's aim. */
-  const dragOffset = useRef<Rotation>({ x: 0, y: 0 });
+  const dragOffset = useRef<GlobeOrientation>({ x: 0, y: 0, z: 0 });
   const spinAim = useRef<SpinAim>({
     serial: -1,
     from: -1,
-    fromRotation: { x: 0, y: 0 },
+    fromRotation: { x: 0, y: 0, z: 0 },
   });
-  const spinTarget = useRef<Rotation>({ x: 0, y: 0 });
+  const spinTarget = useRef<GlobeOrientation>({ x: 0, y: 0, z: 0 });
   const screenCircle = useRef<GlobeScreenCircle>({
     centreX: 0,
     centreY: 0,
@@ -227,6 +228,8 @@ export function GlobeStage({
         x: 0,
         y: viewport.height * 0.2,
         radius: Math.min(viewport.width * 0.34, viewport.height * 0.2),
+        // Stacked, the text is below rather than beside, so the zoom has nothing to clear sideways.
+        maxRight: Number.POSITIVE_INFINITY,
       };
     }
     // Centre stays put as the radius comes down, so the shrink opens up room to the right.
@@ -234,18 +237,9 @@ export function GlobeStage({
       x: -viewport.width * 0.24,
       y: 0,
       radius: Math.min(viewport.height * 0.32, viewport.width * 0.22),
+      maxRight: -viewport.width * ZOOM_TEXT_CLEARANCE,
     };
   }, [size.width, viewport.width, viewport.height]);
-
-  const framing = useMemo(
-    () => ({
-      centreX: restingLayout.x,
-      radius: restingLayout.radius,
-      cameraDistance: CAMERA_DISTANCE,
-      across: AIM_ACROSS_DISC,
-    }),
-    [restingLayout],
-  );
 
   // Countries read as outlines only — caps painted the page colour, provinces as fainter lines.
   useEffect(() => {
@@ -270,13 +264,25 @@ export function GlobeStage({
     return new THREE.Vector3(x, y, z).normalize();
   }
 
-  /** Rotation that faces a stop. The extra spin on top is framing — it centres the stop on the disc as drawn. */
-  function rotationForStop(stop: number): Rotation {
+  /** Orientation that turns a stop's focus head-on to the camera, north up, wherever the globe sits. */
+  function orientationForStop(
+    stop: number,
+    centre: THREE.Vector3,
+    camera: THREE.Vector3,
+  ): GlobeOrientation {
     // Before the journey (-1) the globe already faces the first stop.
-    const place = stops[Math.max(0, stop)];
-    if (place === undefined) return { x: 0, y: 0 };
-    const { x, y } = rotationForCoords(place.lat, place.lng);
-    return { x, y: y + aimSpinForCoords(place.lat, framing) };
+    const focus = stops[Math.max(0, stop)]?.focus;
+    if (focus === undefined) return { x: 0, y: 0, z: 0 };
+    const at = globe.getCoords(focus.lat, focus.lng);
+    const ahead = globe.getCoords(focus.lat + NORTH_STEP_DEG, focus.lng);
+    const normal = new THREE.Vector3(at.x, at.y, at.z).normalize();
+    const north = new THREE.Vector3(
+      ahead.x - at.x,
+      ahead.y - at.y,
+      ahead.z - at.z,
+    );
+    north.addScaledVector(normal, -north.dot(normal)).normalize();
+    return faceCamera(normal, north, centre, camera);
   }
 
   useDragToRotate(
@@ -302,8 +308,6 @@ export function GlobeStage({
       restingLayout.radius / FORMATION_SPHERE_RADIUS,
       shift,
     );
-    placement.position.set(restingLayout.x * shift, restingLayout.y * shift, 0);
-    placement.scale.setScalar(scale);
 
     // The sphere itself arrives with the first rings; before that the arcs own the circle.
     const surfacing = phase(progress, SURFACE_RANGE);
@@ -366,6 +370,29 @@ export function GlobeStage({
       strokeColor,
     );
 
+    // Zoom in as the first chapter arrives, then hold it through every spin.
+    const magnification = THREE.MathUtils.lerp(
+      1,
+      ZOOM_MAGNIFICATION,
+      easeSettle(journeyZoom(layout, screens)),
+    );
+    const zoomed = zoomGlobe(
+      {
+        x: restingLayout.x * shift,
+        y: restingLayout.y * shift,
+        radius: FORMATION_SPHERE_RADIUS * scale,
+        cameraDistance: CAMERA_DISTANCE,
+        maxRight: restingLayout.maxRight,
+      },
+      magnification,
+    );
+    placement.position.set(
+      zoomed.position.x,
+      zoomed.position.y,
+      zoomed.position.z,
+    );
+    placement.scale.setScalar(scale * magnification);
+
     // Leaving for the projects: for now it simply goes, until the musket finale replaces this.
     placement.visible = !isJourneyOver(layout, screens);
 
@@ -378,7 +405,7 @@ export function GlobeStage({
         from: spin.from,
         fromRotation: { ...targetRotation.current },
       };
-      dragOffset.current = { x: 0, y: 0 };
+      dragOffset.current = { x: 0, y: 0, z: 0 };
     } else if (spin.from !== aim.from) {
       // Reversed mid-turn: it now sets off from the stop it was heading to.
       spinAim.current = {
@@ -388,8 +415,16 @@ export function GlobeStage({
       };
     }
     const from = spinAim.current.fromRotation;
-    const toStop = rotationForStop(spin.to);
-    spinTarget.current = { x: toStop.x, y: shortestAngleTo(from.y, toStop.y) };
+    const toStop = orientationForStop(
+      spin.to,
+      placement.position,
+      state.camera.position,
+    );
+    spinTarget.current = {
+      x: toStop.x,
+      y: shortestAngleTo(from.y, toStop.y),
+      z: toStop.z,
+    };
     const turned = easeSettle(spin.progress);
     targetRotation.current = {
       x:
@@ -398,6 +433,7 @@ export function GlobeStage({
       y:
         THREE.MathUtils.lerp(from.y, spinTarget.current.y, turned) +
         dragOffset.current.y,
+      z: THREE.MathUtils.lerp(from.z, spinTarget.current.z, turned),
     };
 
     group.rotation.x = THREE.MathUtils.damp(
@@ -412,10 +448,11 @@ export function GlobeStage({
       FOCUS_DAMPING,
       delta,
     );
-    roll.rotation.z = uprightRoll(
-      placement.position.x,
-      group.rotation.x,
-      CAMERA_DISTANCE,
+    roll.rotation.z = THREE.MathUtils.damp(
+      roll.rotation.z,
+      targetRotation.current.z,
+      FOCUS_DAMPING,
+      delta,
     );
 
     // Cache the globe's screen circle so a press can tell whether it landed on the globe.
@@ -423,16 +460,10 @@ export function GlobeStage({
     const pixelsPerWorldUnit = size.height / viewport.height;
     screenCircle.current = {
       centreX:
-        canvas.left +
-        canvas.width / 2 +
-        placement.position.x * pixelsPerWorldUnit,
+        canvas.left + canvas.width / 2 + zoomed.screenX * pixelsPerWorldUnit,
       centreY:
-        canvas.top +
-        canvas.height / 2 -
-        placement.position.y * pixelsPerWorldUnit,
-      radius: placement.visible
-        ? FORMATION_SPHERE_RADIUS * scale * pixelsPerWorldUnit
-        : 0,
+        canvas.top + canvas.height / 2 - zoomed.screenY * pixelsPerWorldUnit,
+      radius: placement.visible ? zoomed.screenRadius * pixelsPerWorldUnit : 0,
     };
 
     const pin = pinRef.current;
@@ -449,13 +480,14 @@ export function GlobeStage({
       PIN_ALTITUDE,
     );
     pin.position.set(x, y, z);
-    pin.scale.setScalar(PIN_HEIGHT * pinGrowth);
+    // Held to one size on screen however far the globe has zoomed.
+    pin.scale.setScalar((PIN_HEIGHT * pinGrowth) / magnification);
 
     // Where the pin's tip lands on screen, for the leader line to start from.
     pinTip.set(x, y, z);
     group.localToWorld(pinTip);
-    // The globe's centre rides z = 0, so world depth alone settles which side the pin is on.
-    const isFacingCamera = pinTip.z > 0;
+    // Nearer the camera than the globe's centre means the pin is on the facing side.
+    const isFacingCamera = pinTip.z > placement.position.z;
     pinTip.project(state.camera);
     onAnchorMove(
       canvas.left + ((pinTip.x + 1) / 2) * canvas.width,
@@ -487,8 +519,8 @@ export function GlobeStage({
 function useDragToRotate(
   isRevealed: boolean,
   groupRef: React.RefObject<THREE.Group | null>,
-  targetRotation: React.RefObject<Rotation>,
-  dragOffset: React.RefObject<Rotation>,
+  targetRotation: React.RefObject<GlobeOrientation>,
+  dragOffset: React.RefObject<GlobeOrientation>,
   screenCircle: React.RefObject<GlobeScreenCircle>,
 ) {
   useEffect(() => {
@@ -554,8 +586,10 @@ function useDragToRotate(
       dragOffset.current = {
         x: dragOffset.current.x + tilt - targetRotation.current.x,
         y: dragOffset.current.y + turn,
+        z: 0,
       };
       targetRotation.current = {
+        ...targetRotation.current,
         x: tilt,
         y: targetRotation.current.y + turn,
       };
