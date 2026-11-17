@@ -1,27 +1,22 @@
 import {
-  sectionTrackId,
-  useSectionSelector,
-} from "@/components/app/scroll/timeline";
-import { cn } from "@/components/lib/utils";
+  HERO_SCROLL_SCREENS,
+  PORTFOLIO_RISE_AT,
+} from "@/components/app/max-hero/heroTransition";
+import { sectionTrackId } from "@/components/app/scroll/timeline";
 import { BodyText, Heading } from "@/components/peduncle/Typography";
 
-// Placeholder for the full-screen projects section. It sits over the journey's last pinned screen
-// and appears the moment the globe goes, standing in for the musket's fragments forming the page.
-export function ProjectsSection() {
-  const isJourneyOver = useSectionSelector(
-    "about",
-    (progress) => progress >= 1,
-  );
+/** Pulls the portfolio up over the hero's tail, so it starts rising just before the globe docks. */
+const HERO_OVERLAP_SCREENS = (1 - PORTFOLIO_RISE_AT) * HERO_SCROLL_SCREENS;
 
+// Placeholder for the full-screen portfolio, which rises in under the docking globe. Positioned so
+// it paints over the hero's pinned screen; still under the canvas (z-20), so the globe stays on top.
+export function ProjectsSection() {
   return (
     <section
       id={sectionTrackId("projects")}
       aria-labelledby="projects-heading"
-      className={cn(
-        // Kept in the accessibility tree while hidden; only sighted visitors wait for the journey.
-        "-mt-[100vh] flex min-h-screen w-full flex-col justify-center gap-m px-m md:px-l",
-        isJourneyOver ? "opacity-100" : "pointer-events-none opacity-0",
-      )}
+      className="relative z-10 flex min-h-screen w-full flex-col justify-center gap-m bg-background-default px-m md:px-l"
+      style={{ marginTop: `${String(-HERO_OVERLAP_SCREENS * 100)}vh` }}
     >
       <Heading level="h2" id="projects-heading">
         Projects

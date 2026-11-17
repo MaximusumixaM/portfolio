@@ -2,10 +2,10 @@ import { useCallback, useSyncExternalStore } from "react";
 
 // Shared 0–1 progress per section (ScrollController writes it); canvas reads imperatively, DOM via the hooks.
 
-export type SectionId = "hero" | "about" | "projects";
+export type SectionId = "hero" | "projects";
 
 /** Every section, in page order. ScrollController drives whichever of these has a track mounted. */
-export const SECTION_IDS: readonly SectionId[] = ["hero", "about", "projects"];
+export const SECTION_IDS: readonly SectionId[] = ["hero", "projects"];
 
 /** Id of the element a section's scroll is measured across (for pinned sections, the tall track). */
 export function sectionTrackId(id: SectionId): string {

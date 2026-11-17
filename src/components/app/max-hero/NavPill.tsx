@@ -5,7 +5,7 @@ import {
   NAV_PILL_APPEAR_AT,
   NAV_PILL_BORDER_AT,
 } from "./heroTransition";
-import { BORDER_DRAW_MS, NavPillBorder } from "./NavPillBorder";
+import { NavPillBorder } from "./NavPillBorder";
 
 import { HockeyGame } from "@/components/app/HockeyGame";
 import { useSectionPast } from "@/components/app/scroll/timeline";
@@ -27,17 +27,10 @@ interface Size {
   height: number;
 }
 
-export interface NavPillProps {
-  onAbout: () => void;
-  onProjects: () => void;
-}
-
 // Resting place for the settled wordmark (the 3D logo animates into this slot) and the easter-egg dialog trigger. Border is the SVG overlay so the pill starts borderless.
-export function NavPill({ onAbout, onProjects }: NavPillProps) {
+export function NavPill() {
   const isSettled = useSectionPast("hero", NAV_PILL_APPEAR_AT);
   const isBorderDrawn = useSectionPast("hero", NAV_PILL_BORDER_AT);
-  // The side actions unfold only once the pill's own border has finished closing.
-  const areActionsShown = useDelayed(isBorderDrawn, BORDER_DRAW_MS);
 
   const [pillRef, pillSize] = useMeasuredSize<HTMLButtonElement>();
 
@@ -46,52 +39,34 @@ export function NavPill({ onAbout, onProjects }: NavPillProps) {
       <nav
         aria-label="Primary"
         className={cn(
-          // Full-width strip stays click-through; only the pills themselves are interactive. It sits
+          // Full-width strip stays click-through; only the pill itself is interactive. It sits
           // under the (click-through) canvas so the 3D logo lands on top of the pill, not behind it.
           "pointer-events-none fixed inset-x-0 top-m z-10 flex justify-center transition-all duration-300",
           isSettled ? "translate-y-0 opacity-100" : "-translate-y-s opacity-0",
         )}
       >
-        {/* Only the wordmark's pill takes part in the layout, so it stays dead centre however
-            wide the actions flanking it turn out to be. */}
-        <div className="relative">
-          <NavAction
-            side="left"
-            label="about"
-            isShown={areActionsShown}
-            onClick={onAbout}
+        <DialogTrigger
+          ref={pillRef}
+          className={cn(
+            "relative flex items-center gap-m rounded-round bg-background-default/80 px-l py-s backdrop-blur-medium",
+            isSettled && "pointer-events-auto cursor-pointer",
+          )}
+        >
+          <span className="visually-hidden">Max Nobell-Cluff</span>
+          {/* Reserved slot the 3D logo lands in, sized from the shared constant. */}
+          <div
+            aria-hidden="true"
+            style={{
+              height: `${String(NAV_LOGO_HEIGHT_PX)}px`,
+              width: `${String(Math.round(NAV_LOGO_HEIGHT_PX * LOGO_ASPECT))}px`,
+            }}
           />
-
-          <DialogTrigger
-            ref={pillRef}
-            className={cn(
-              "relative z-10 flex items-center gap-m rounded-round bg-background-default/80 px-l py-s backdrop-blur-medium",
-              isSettled && "pointer-events-auto cursor-pointer",
-            )}
-          >
-            <span className="visually-hidden">Max Nobell-Cluff</span>
-            {/* Reserved slot the 3D logo lands in, sized from the shared constant. */}
-            <div
-              aria-hidden="true"
-              style={{
-                height: `${String(NAV_LOGO_HEIGHT_PX)}px`,
-                width: `${String(Math.round(NAV_LOGO_HEIGHT_PX * LOGO_ASPECT))}px`,
-              }}
-            />
-            <NavPillBorder
-              width={pillSize.width}
-              height={pillSize.height}
-              drawn={isBorderDrawn}
-            />
-          </DialogTrigger>
-
-          <NavAction
-            side="right"
-            label="projects"
-            isShown={areActionsShown}
-            onClick={onProjects}
+          <NavPillBorder
+            width={pillSize.width}
+            height={pillSize.height}
+            drawn={isBorderDrawn}
           />
-        </div>
+        </DialogTrigger>
       </nav>
 
       <DialogContent title="Canucks">
@@ -116,49 +91,6 @@ export function NavPill({ onAbout, onProjects }: NavPillProps) {
   );
 }
 
-interface NavActionProps {
-  label: string;
-  side: "left" | "right";
-  isShown: boolean;
-  onClick: () => void;
-}
-
-/** A smaller pill that slides out from behind the wordmark's, drawing its own border as it lands. */
-function NavAction({ label, side, isShown, onClick }: NavActionProps) {
-  const [actionRef, actionSize] = useMeasuredSize<HTMLButtonElement>();
-  const isLeft = side === "left";
-  // The end tucked under the wordmark's pill: squared off, and where the border draws out from.
-  const innerEnd = isLeft ? "right" : "left";
-
-  return (
-    <Button
-      ref={actionRef}
-      variant="ghost"
-      onClick={onClick}
-      tabIndex={isShown ? undefined : -1}
-      className={cn(
-        "absolute top-1/2 z-0 -translate-y-1/2 rounded-round bg-background-default/80 py-s tracking-widest backdrop-blur-medium transition-all duration-500",
-        // Squared off where it tucks under: two facing curves showing through each other read as a seam.
-        isLeft
-          ? "right-full -mr-m rounded-r-none pl-m pr-l"
-          : "left-full -ml-m rounded-l-none pl-l pr-m",
-        isShown
-          ? "pointer-events-auto translate-x-0 opacity-100"
-          : cn("opacity-0", isLeft ? "translate-x-l" : "-translate-x-l"),
-      )}
-    >
-      {label}
-      <NavPillBorder
-        width={actionSize.width}
-        height={actionSize.height}
-        drawn={isShown}
-        flatEnd={innerEnd}
-        origin={innerEnd}
-      />
-    </Button>
-  );
-}
-
 /** Measures an element's box, so the drawn border can trace whatever the content came out as. */
 function useMeasuredSize<T extends HTMLElement>(): [
   React.RefObject<T | null>,
@@ -180,24 +112,4 @@ function useMeasuredSize<T extends HTMLElement>(): [
   }, []);
 
   return [ref, size];
-}
-
-/** Trails `isOn` by `delayMs` on the way up; drops the moment it turns off. */
-function useDelayed(isOn: boolean, delayMs: number): boolean {
-  const [isDelayed, setIsDelayed] = useState(false);
-
-  useEffect(() => {
-    if (!isOn) {
-      setIsDelayed(false);
-      return;
-    }
-    const timer = setTimeout(() => {
-      setIsDelayed(true);
-    }, delayMs);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [isOn, delayMs]);
-
-  return isDelayed;
 }

@@ -1,43 +1,17 @@
 import { Environment, Lightformer } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { HeroStage } from "./HeroStage";
 import { CAMERA_DISTANCE, CAMERA_FOV } from "./sceneMetrics";
 
-import type { Chapter } from "@/components/app/journey/chapter";
-import { JourneyDirector } from "@/components/app/journey/JourneyDirector";
-import type { JourneyLayout } from "@/components/app/journey/journeyLayout";
 import { GlobeStage } from "@/components/app/portfolio-globe/GlobeStage";
 import { cn } from "@/components/lib/utils";
 
-export interface MaxSceneProps {
-  isRevealed: boolean;
-  chapters: readonly Chapter[];
-  layout: JourneyLayout;
-  onAnchorMove: (viewportX: number, viewportY: number, drawn: number) => void;
-}
-
 // The WebGL half of the page: the wordmark and the globe share one fixed, viewport-filling canvas
 // so the circle the arcs draw can hand straight over to the globe growing inside it.
-export function MaxScene({
-  isRevealed,
-  chapters,
-  layout,
-  onAnchorMove,
-}: MaxSceneProps) {
+export function MaxScene() {
   const [isReady, setIsReady] = useState(false);
-  const stops = useMemo(
-    () =>
-      chapters.map(({ place, focus, countryCode, regionCode }) => ({
-        lat: place.lat,
-        lng: place.lng,
-        focus: focus ?? { lat: place.lat, lng: place.lng },
-        countryCode,
-        regionCode,
-      })),
-    [chapters],
-  );
 
   return (
     <div
@@ -47,7 +21,7 @@ export function MaxScene({
       )}
     >
       <Canvas
-        // Click-through, so the nav keeps its own hit targets; the globe reads drags off the window.
+        // Click-through, so the page and nav keep their own hit targets.
         style={{ pointerEvents: "none" }}
         camera={{ position: [0, 0, CAMERA_DISTANCE], fov: CAMERA_FOV }}
         gl={{ antialias: true, alpha: true }}
@@ -65,13 +39,7 @@ export function MaxScene({
         />
 
         <HeroStage />
-        <JourneyDirector chapters={chapters} layout={layout} />
-        <GlobeStage
-          isRevealed={isRevealed}
-          stops={stops}
-          layout={layout}
-          onAnchorMove={onAnchorMove}
-        />
+        <GlobeStage />
 
         {/* Procedural studio environment (no CDN fetch): soft key + rim + colored accents
           give the clearcoat real specular highlights and reflections. */}

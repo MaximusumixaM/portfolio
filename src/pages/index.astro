@@ -1,20 +1,8 @@
 ---
-import { getCollection } from "astro:content";
-
 import { SiteExperience } from "../components/app/SiteExperience";
 import Layout from "../layouts/Layout.astro";
-
-const chapters = (await getCollection("chapters"))
-  .sort((a, b) => a.data.order - b.data.order)
-  .map(({ id, data }) => ({ id, ...data }));
-// With no stops the journey has no length, so the globe would read as already gone.
-if (chapters.length === 0) {
-  throw new Error(
-    "No journey chapters loaded from src/content/chapters — check the files against the schema in src/content.config.ts",
-  );
-}
 ---
 
 <Layout>
-  <SiteExperience client:load chapters={chapters} />
+  <SiteExperience client:load />
 </Layout>

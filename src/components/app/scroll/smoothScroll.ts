@@ -9,59 +9,51 @@ export function registerLenis(instance: Lenis | null): void {
   lenis = instance;
 }
 
-/** `glide` scrolls there smoothly; `cut` lands there at once. */
-export type ScrollMode = "glide" | "cut";
-
 const GLIDE_SECONDS = 2.4;
 
-/** Resolves once the scroll has landed. */
-function scrollToY(top: number, mode: ScrollMode): Promise<void> {
-  if (lenis === null) {
-    window.scrollTo({ top, behavior: mode === "glide" ? "smooth" : "instant" });
-    return Promise.resolve();
-  }
-  const instance = lenis;
-  return new Promise((resolve) => {
-    const onComplete = () => {
-      resolve();
-    };
-    if (mode === "cut") {
-      instance.scrollTo(top, { immediate: true, onComplete });
-    } else {
-      instance.scrollTo(top, { duration: GLIDE_SECONDS, onComplete });
-    }
-  });
-}
-
-function findTrack(id: SectionId): HTMLElement | null {
-  return document.getElementById(sectionTrackId(id));
-}
-
-function documentTop(element: HTMLElement): number {
-  return element.getBoundingClientRect().top + window.scrollY;
-}
-
-export interface ScrollToSectionOptions {
-  mode: ScrollMode;
-  /** How far past the section's start to land, in screens (viewport heights). */
-  intoScreens?: number;
-}
-
-export async function scrollToSection(
-  id: SectionId,
-  { mode, intoScreens = 0 }: ScrollToSectionOptions,
-): Promise<void> {
-  const track = findTrack(id);
-  if (track === null) return;
-  await scrollToY(documentTop(track) + intoScreens * window.innerHeight, mode);
+/** Document scroll position where a section's pinned screen has played out, or null if absent. */
+function sectionEndTop(id: SectionId): number | null {
+  const track = document.getElementById(sectionTrackId(id));
+  if (track === null) return null;
+  return (
+    track.getBoundingClientRect().top +
+    window.scrollY +
+    track.offsetHeight -
+    window.innerHeight
+  );
 }
 
 /** Runs a section out to its end state, for anyone who'd rather not scroll it themselves. */
 export async function scrollToSectionEnd(id: SectionId): Promise<void> {
-  const track = findTrack(id);
-  if (track === null) return;
-  await scrollToY(
-    documentTop(track) + track.offsetHeight - window.innerHeight,
-    "glide",
-  );
+  const top = sectionEndTop(id);
+  if (top === null) return;
+  if (lenis === null) {
+    window.scrollTo({ top, behavior: "smooth" });
+    return;
+  }
+  const instance = lenis;
+  await new Promise<void>((resolve) => {
+    instance.scrollTo(top, {
+      duration: GLIDE_SECONDS,
+      onComplete: () => {
+        resolve();
+      },
+    });
+  });
+}
+
+/** Lands on a section's end state at once. */
+export function jumpToSectionEnd(id: SectionId): void {
+  const top = sectionEndTop(id);
+  if (top === null) return;
+  if (lenis === null) window.scrollTo({ top, behavior: "instant" });
+  else lenis.scrollTo(top, { immediate: true, force: true });
+}
+
+/** Holds the page still (or lets it go) — while About is over it, the portfolio stays put. */
+export function setScrollLocked(isLocked: boolean): void {
+  if (isLocked) lenis?.stop();
+  else lenis?.start();
+  // Without Lenis (reduced motion), native scrolling has to be held directly.
+  document.documentElement.style.overflow = isLocked ? "hidden" : "";
 }

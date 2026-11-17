@@ -12,7 +12,8 @@ export const FORMATION_RING_RADIUS = 2.4;
  * has to be a shade smaller than the circle to grow inside it rather than out of it.
  */
 export const FORMATION_SPHERE_RADIUS =
-  FORMATION_RING_RADIUS / Math.hypot(1, FORMATION_RING_RADIUS / CAMERA_DISTANCE);
+  FORMATION_RING_RADIUS /
+  Math.hypot(1, FORMATION_RING_RADIUS / CAMERA_DISTANCE);
 
-/** Below this viewport width the panel sits under the globe rather than beside it. */
+/** Below this viewport width (Tailwind's `md`) layouts stack instead of sitting side by side. */
 export const STACKED_BREAKPOINT_PX = 768;

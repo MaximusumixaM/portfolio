@@ -12,24 +12,32 @@ export const NAV_LOGO_CENTER_Y_PX =
   NAV_PILL_TOP_PX + NAV_PILL_PADDING_Y_PX + NAV_LOGO_HEIGHT_PX / 2;
 
 // Scroll sub-ranges staging the intro. The circle the arcs draw becomes the globe's silhouette:
-// rings draw onto it, the wordmark leaves for the nav while the globe slides out from under it,
-// then the borders draw and the globe is handed to the visitor, with the About journey straight
-// after. Overlaps are deliberate — the beats should knit.
+// rings draw onto it, then the borders as the wordmark leaves for the nav and the globe sweeps from
+// under it straight up into the top-right corner, still drawing, with the portfolio rising too.
+// Overlaps are deliberate — the beats should knit.
 export const PHASES = {
   arcs: [0.0, 0.15],
   graticule: [0.14, 0.4],
   rise: [0.28, 0.6],
-  shift: [0.41, 0.6],
-  countries: [0.57, 0.97],
+  countries: [0.4, 0.97],
+  dock: [0.41, 1],
   reveal: [0.97, 1],
 } as const;
 
+/** Where the portfolio starts rising in under the hero, partway through the globe's sweep. */
+export const PORTFOLIO_RISE_AT = 0.5;
+
+/** The docked globe's radius on screen, in CSS pixels. */
+export const DOCK_RADIUS_PX = 64;
+/** Its radius while hovered. */
+export const DOCK_HOVER_RADIUS_PX = 70;
+/** Gap between the docked globe and the right edge — matches the corner labels' `right-m`. */
+export const DOCK_RIGHT_PX = 16;
+/** Top edge of the docked globe — level with the corner labels' `top-m`. */
+export const DOCK_TOP_PX = 16;
+
 /** Scroll the hero's sequence takes, in screens, on top of its one pinned screen. */
 export const HERO_SCROLL_SCREENS = 1;
-
-/** Where the journey takes over: the first chapter's provinces start as the borders reach 90%. */
-export const JOURNEY_HANDOFF_AT =
-  PHASES.countries[0] + 0.9 * (PHASES.countries[1] - PHASES.countries[0]);
 
 /** Fraction of the settle where the pill fades in behind the arriving logo. */
 export const NAV_PILL_APPEAR_AT =

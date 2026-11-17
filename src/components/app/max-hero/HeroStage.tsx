@@ -43,10 +43,10 @@ const FACE_FILL = 0.82;
 const TILT_MAX = 0.55;
 /** Clearance between the globe's surface and the letters floating in front of it. */
 const FRONT_CLEARANCE = 0.05;
-// The living material rigidifies as the globe takes over the circle.
+// The living material rigidifies as the globe takes over the circle, settled by the time it leaves.
 const FLATTEN_RANGE: readonly [number, number] = [
   PHASES.arcs[0],
-  PHASES.shift[0],
+  PHASES.dock[0],
 ];
 
 export function HeroStage() {
