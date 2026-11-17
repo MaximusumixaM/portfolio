@@ -1,13 +1,16 @@
 ---
 import { SiteExperience } from "../components/app/SiteExperience";
+import { loadChapters } from "../data/chapters";
 import Layout from "../layouts/Layout.astro";
+
+const chapters = await loadChapters();
 ---
 
-<Layout title="About — Max Nobell-Cluff">
+<Layout title="About - Max Nobell-Cluff">
   <!-- Before the page loads: a refresh's scroll restoration would otherwise land after the island
        has parked the portfolio at the hero's end, and undo it. -->
   <script is:inline slot="head">
     history.scrollRestoration = "manual";
   </script>
-  <SiteExperience client:load initialView="about" />
+  <SiteExperience client:load chapters={chapters} initialView="about" />
 </Layout>

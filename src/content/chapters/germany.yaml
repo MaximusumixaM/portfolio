@@ -1,7 +1,6 @@
 order: 3
-title: Germany
 place:
-  label: Schwäbisch Gmünd, Germany
+  label: Schwäbisch Gmünd, Baden-Württemberg, Germany
   lat: 48.7999
   lng: 9.7981
 countryCode: DEU

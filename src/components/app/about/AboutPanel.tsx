@@ -1,19 +1,38 @@
 import { useCallback, useEffect, useRef } from "react";
 
-import { useAboutProgressEffect, useIsAboutOpen } from "./aboutView";
+import {
+  selectChapter,
+  useAboutProgressEffect,
+  useActiveChapter,
+  useIsAboutOpen,
+  useShownChapter,
+} from "./aboutView";
+import type { Chapter, Chapters } from "./chapter";
 
 import { useGlobeDrag } from "@/components/app/portfolio-globe/useGlobeDrag";
 import { usePrefersReducedMotion } from "@/components/lib/usePrefersReducedMotion";
+import { cn } from "@/components/lib/utils";
+import { Button } from "@/components/peduncle/Button";
 import { BodyText, Heading } from "@/components/peduncle/Typography";
 
 // The About page: a screen sitting just off to the right of the portfolio, panned across into view
-// as the globe rides over from the corner into its left half. Content is a placeholder for now.
+// as the globe rides over from the corner into its left half. Every place is listed; picking one opens
+// its text, moves the globe to it, and runs the line from its pin to its heading.
 export interface AboutPanelProps {
   /** Server-render it already in place, for a page loaded at /about. */
   startsOpen: boolean;
+  chapters: Chapters;
+  /** Lands on the heading of the place whose marks are on the globe — where the leader line runs. */
+  titleRef: React.Ref<HTMLHeadingElement>;
 }
 
-export function AboutPanel({ startsOpen }: AboutPanelProps) {
+export function AboutPanel({
+  startsOpen,
+  chapters,
+  titleRef,
+}: AboutPanelProps) {
+  const activeChapter = useActiveChapter();
+  const shownChapter = useShownChapter();
   const isOpen = useIsAboutOpen();
   const panelRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -73,20 +92,77 @@ export function AboutPanel({ startsOpen }: AboutPanelProps) {
         {/* The globe's half (its top, when stacked). */}
         <div className="h-[55vh] md:h-auto" />
         <div className="flex flex-col justify-center gap-m px-m pb-xl md:px-l md:pb-0">
+          {/* Where focus lands on opening; the visible story starts with the city. */}
           <Heading
             ref={headingRef}
             level="h2"
             id="about-heading"
             tabIndex={-1}
-            className="outline-none"
+            className="visually-hidden"
           >
             About
           </Heading>
-          <BodyText className="text-foreground-secondary">
-            Placeholder: About goes here.
-          </BodyText>
+          <ul className="flex max-w-prose flex-col gap-m">
+            {chapters.map((chapter, index) => (
+              <ChapterItem
+                key={chapter.id}
+                chapter={chapter}
+                index={index}
+                isExpanded={index === activeChapter}
+                titleRef={index === shownChapter ? titleRef : undefined}
+              />
+            ))}
+          </ul>
         </div>
       </section>
     </div>
+  );
+}
+
+interface ChapterItemProps {
+  chapter: Chapter;
+  index: number;
+  isExpanded: boolean;
+  titleRef: React.Ref<HTMLHeadingElement> | undefined;
+}
+
+/** One place: a heading that opens it (closing the others), and its text beneath. */
+function ChapterItem({
+  chapter,
+  index,
+  isExpanded,
+  titleRef,
+}: ChapterItemProps) {
+  const textId = `chapter-text-${chapter.id}`;
+
+  return (
+    <li className="flex flex-col">
+      <Heading ref={titleRef} level="h3">
+        <Button
+          variant="ghost"
+          aria-expanded={isExpanded}
+          aria-controls={textId}
+          onClick={() => {
+            selectChapter(index);
+          }}
+          className="h-auto justify-start p-0 text-left font-display text-heading-sm font-semibold"
+        >
+          {chapter.place.label}
+        </Button>
+      </Heading>
+      {/* Opens and closes by animating the row height (0fr ↔ 1fr), so it slides rather than jumps. */}
+      <div
+        id={textId}
+        inert={!isExpanded}
+        className={cn(
+          "grid transition-[grid-template-rows] duration-300",
+          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div className="overflow-hidden">
+          <BodyText className="pb-s pt-s">{chapter.text}</BodyText>
+        </div>
+      </div>
+    </li>
   );
 }

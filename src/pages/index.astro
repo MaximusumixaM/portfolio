@@ -1,8 +1,11 @@
 ---
 import { SiteExperience } from "../components/app/SiteExperience";
+import { loadChapters } from "../data/chapters";
 import Layout from "../layouts/Layout.astro";
+
+const chapters = await loadChapters();
 ---
 
 <Layout>
-  <SiteExperience client:load />
+  <SiteExperience client:load chapters={chapters} />
 </Layout>

@@ -1,16 +1,31 @@
 import { Environment, Lightformer } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { HeroStage } from "./HeroStage";
 import { CAMERA_DISTANCE, CAMERA_FOV } from "./sceneMetrics";
 
-import { GlobeStage } from "@/components/app/portfolio-globe/GlobeStage";
+import type { Chapter, Chapters } from "@/components/app/about/chapter";
+import {
+  GlobeStage,
+  type GlobeCity,
+} from "@/components/app/portfolio-globe/GlobeStage";
 import { cn } from "@/components/lib/utils";
 
 // The WebGL half of the page: the wordmark and the globe share one fixed, viewport-filling canvas
 // so the circle the arcs draw can hand straight over to the globe growing inside it.
-export function MaxScene() {
+export interface MaxSceneProps {
+  /** About's places, in order. */
+  chapters: Chapters;
+  /** Each frame: the city pin's tip in viewport space, and how far the leader line has drawn. */
+  onAnchorMove: (viewportX: number, viewportY: number, drawn: number) => void;
+}
+
+export function MaxScene({ chapters, onAnchorMove }: MaxSceneProps) {
+  const cities = useMemo((): readonly [GlobeCity, ...GlobeCity[]] => {
+    const [first, ...rest] = chapters;
+    return [toGlobeCity(first), ...rest.map(toGlobeCity)];
+  }, [chapters]);
   const [isReady, setIsReady] = useState(false);
 
   return (
@@ -39,7 +54,7 @@ export function MaxScene() {
         />
 
         <HeroStage />
-        <GlobeStage />
+        <GlobeStage cities={cities} onAnchorMove={onAnchorMove} />
 
         {/* Procedural studio environment (no CDN fetch): soft key + rim + colored accents
           give the clearcoat real specular highlights and reflections. */}
@@ -72,4 +87,19 @@ export function MaxScene() {
       </Canvas>
     </div>
   );
+}
+
+function toGlobeCity({
+  place,
+  focus,
+  countryCode,
+  regionCode,
+}: Chapter): GlobeCity {
+  return {
+    lat: place.lat,
+    lng: place.lng,
+    focus: focus ?? { lat: place.lat, lng: place.lng },
+    countryCode,
+    regionCode,
+  };
 }

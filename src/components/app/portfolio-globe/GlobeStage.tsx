@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import ThreeGlobe from "three-globe";
 
+import { CityPin, PIN_ALTITUDE, PIN_HEIGHT } from "./CityPin";
+import { collectFills, shadeCountry, shadeRegion } from "./fillShade";
 import { FormationRing } from "./FormationRing";
 import {
   isGlobeDragging,
@@ -11,8 +13,12 @@ import {
 } from "./globeControl";
 import {
   COUNTRY_ALTITUDE,
+  REGION_ALTITUDE,
   disableToneMapping,
+  isGlobePolygon,
   loadGlobePolygons,
+  polygonCapColor,
+  polygonStrokeColor,
   type GlobePolygon,
 } from "./globePolygons";
 import { faceCamera, shortestAngleTo } from "./globeRotation";
@@ -23,7 +29,14 @@ import {
   type PolygonOutline,
 } from "./outlineReveal";
 
-import { getAboutProgress } from "@/components/app/about/aboutView";
+import {
+  getAboutMarks,
+  getAboutProgress,
+  getActiveChapter,
+  getIsAboutOpen,
+  getShownChapter,
+} from "@/components/app/about/aboutView";
+import { cityMarks } from "@/components/app/about/cityMarks";
 import {
   DOCK_HOVER_RADIUS_PX,
   DOCK_RADIUS_PX,
@@ -69,10 +82,26 @@ const SURFACE_RANGE: readonly [number, number] = [
  */
 const SWEEP_BEND = 0.2;
 
-/** Vancouver: the globe faces it through the hero, and the borders draw outward from it. */
-const FACING = { lat: 49.2827, lng: -123.1207 };
 /** A little north of the facing point, for its local north direction. */
 const NORTH_STEP_DEG = 0.5;
+
+const pinTip = new THREE.Vector3();
+
+export interface GlobeCity {
+  lat: number;
+  lng: number;
+  /** Where the globe centres while it faces this city (often the city itself). */
+  focus: { lat: number; lng: number };
+  /** ISO_A3 of its country, whose provinces draw in and fill shades lightly in About. */
+  countryCode: string;
+  /** ISO 3166-2 of its own province, which shades in more strongly. */
+  regionCode: string;
+}
+
+interface Facing {
+  normal: THREE.Vector3;
+  north: THREE.Vector3;
+}
 
 function useGlobePolygons(): GlobePolygon[] {
   const [polygons, setPolygons] = useState<GlobePolygon[]>([]);
@@ -96,9 +125,17 @@ function useGlobePolygons(): GlobePolygon[] {
   return polygons;
 }
 
+export interface GlobeStageProps {
+  /** About's places, in order. The first is faced through the hero; About faces the one picked. */
+  cities: readonly [GlobeCity, ...GlobeCity[]];
+  /** Each frame: the pin's tip in viewport space, and how far the leader line has drawn (0 hides it). */
+  onAnchorMove: (viewportX: number, viewportY: number, drawn: number) => void;
+}
+
 // The globe half of the scene: it grows inside the circle the formation arcs drew, then sweeps up
-// into the top-right corner while its borders draw — where it stays, docked, through the portfolio.
-export function GlobeStage() {
+// into the top-right corner while its borders draw — where it stays, docked, through the portfolio —
+// and moves over into About, where the city's marks grow out of it.
+export function GlobeStage({ cities, onAnchorMove }: GlobeStageProps) {
   const size = useThree((state) => state.size);
   const viewport = useThree((state) => state.viewport);
 
@@ -108,7 +145,15 @@ export function GlobeStage() {
   const lensUnalignRef = useRef<THREE.Group>(null);
   const rollRef = useRef<THREE.Group>(null);
   const rotationRef = useRef<THREE.Group>(null);
+  const pinRef = useRef<THREE.Group>(null);
   const outlines = useRef<PolygonOutline[]>([]);
+  /** Each place's country's province outlines, drawn as its marks arrive. */
+  const provinceOutlines = useRef(new Map<string, PolygonOutline[]>());
+  const countryFills = useRef(new Map<string, THREE.MeshBasicMaterial[]>());
+  const regionFills = useRef(new Map<string, THREE.MeshBasicMaterial[]>());
+  /** Whether About was open last frame, and the place it faced, to catch either changing. */
+  const wasAboutOpen = useRef(false);
+  const lastActiveChapter = useRef(0);
   /** Turn and tip the visitor has added by hovering and dragging, kept — it rests where it's left. */
   const userSpin = useRef(0);
   const userTilt = useRef(0);
@@ -134,7 +179,11 @@ export function GlobeStage() {
         .showAtmosphere(false)
         // The intro owns the reveal; three-globe's own tweening would fight it.
         .polygonsTransitionDuration(0)
-        .polygonAltitude(COUNTRY_ALTITUDE),
+        .polygonAltitude((polygon) =>
+          isGlobePolygon(polygon) && polygon.tier === "region"
+            ? REGION_ALTITUDE
+            : COUNTRY_ALTITUDE,
+        ),
     [],
   );
   const globeRadius = useMemo(() => globe.getGlobeRadius(), [globe]);
@@ -146,24 +195,46 @@ export function GlobeStage() {
     };
   }, [globe, surfaceMaterial]);
 
-  useEffect(() => {
-    globe.polygonsData(polygons);
-    outlines.current = [];
-  }, [globe, polygons]);
+  const placeCountries = useMemo(
+    () => new Set(cities.map((city) => city.countryCode)),
+    [cities],
+  );
 
-  /** The facing point's outward and northward directions, in globe space. */
-  const facing = useMemo(() => {
-    const at = globe.getCoords(FACING.lat, FACING.lng);
-    const ahead = globe.getCoords(FACING.lat + NORTH_STEP_DEG, FACING.lng);
-    const normal = new THREE.Vector3(at.x, at.y, at.z).normalize();
-    const north = new THREE.Vector3(
-      ahead.x - at.x,
-      ahead.y - at.y,
-      ahead.z - at.z,
+  // Every country, plus the provinces of the places' own countries — the rest of the province data
+  // isn't drawn.
+  useEffect(() => {
+    globe.polygonsData(
+      polygons.filter(
+        (polygon) =>
+          polygon.tier === "country" || placeCountries.has(polygon.country),
+      ),
     );
-    north.addScaledVector(normal, -north.dot(normal)).normalize();
-    return { normal, north };
-  }, [globe]);
+    outlines.current = [];
+  }, [globe, polygons, placeCountries]);
+
+  /** Each place's view centre turned into outward and northward directions, in globe space. */
+  const facings = useMemo(
+    () =>
+      cities.map(({ focus }): Facing => {
+        const at = globe.getCoords(focus.lat, focus.lng);
+        const ahead = globe.getCoords(focus.lat + NORTH_STEP_DEG, focus.lng);
+        const normal = new THREE.Vector3(at.x, at.y, at.z).normalize();
+        const north = new THREE.Vector3(
+          ahead.x - at.x,
+          ahead.y - at.y,
+          ahead.z - at.z,
+        );
+        north.addScaledVector(normal, -north.dot(normal)).normalize();
+        return { normal, north };
+      }),
+    [globe, cities],
+  );
+
+  /** Globe-space direction of a city, which its provinces draw outward from. */
+  function cityDirection(city: GlobeCity): THREE.Vector3 {
+    const { x, y, z } = globe.getCoords(city.lat, city.lng);
+    return new THREE.Vector3(x, y, z).normalize();
+  }
 
   /**
    * The top-right corner it docks in (converted from the shared pixel metrics to world units), and
@@ -199,14 +270,19 @@ export function GlobeStage() {
     };
   }, [size.width, viewport.width, viewport.height]);
 
-  // Countries read as outlines only — caps painted the page colour.
+  // Countries read as outlines only — caps painted the page colour, provinces as fainter lines.
   useEffect(() => {
-    const surface = `#${surfaceColor.getHexString()}`;
+    const fill = (polygon: object) =>
+      isGlobePolygon(polygon) ? polygonCapColor(polygon, surfaceColor) : "";
     globe
       .globeMaterial(surfaceMaterial)
-      .polygonCapColor(() => surface)
-      .polygonSideColor(() => surface)
-      .polygonStrokeColor(() => `#${strokeColor.getHexString()}`);
+      .polygonCapColor(fill)
+      .polygonSideColor(fill)
+      .polygonStrokeColor((polygon) =>
+        isGlobePolygon(polygon)
+          ? polygonStrokeColor(polygon, strokeColor)
+          : false,
+      );
     disableToneMapping(globe);
   }, [globe, surfaceMaterial, surfaceColor, strokeColor]);
 
@@ -285,18 +361,81 @@ export function GlobeStage() {
     surfaceMaterial.color.copy(pageColor).lerp(surfaceColor, surfacing);
 
     if (outlines.current.length === 0 && polygons.length > 0) {
-      outlines.current = collectOutlines(globe, facing.normal);
+      outlines.current = collectOutlines(
+        globe,
+        cityDirection(cities[0]),
+        (polygon) => polygon.tier === "country",
+      );
+      provinceOutlines.current = new Map(
+        cities.map((city) => [
+          city.countryCode,
+          collectOutlines(
+            globe,
+            cityDirection(city),
+            (polygon) =>
+              polygon.tier === "region" && polygon.country === city.countryCode,
+          ),
+        ]),
+      );
+      const placeRegions = new Set(cities.map((city) => city.regionCode));
+      countryFills.current = collectFills(globe, (polygon) =>
+        polygon.tier === "country" && placeCountries.has(polygon.code)
+          ? polygon.code
+          : undefined,
+      );
+      regionFills.current = collectFills(globe, (polygon) =>
+        polygon.tier === "region" && placeRegions.has(polygon.code)
+          ? polygon.code
+          : undefined,
+      );
       if (outlines.current.length > 0) disableToneMapping(globe);
     }
     drawOutlines(outlines.current, phase(progress, PHASES.countries));
 
-    // Vancouver head-on and north up, wherever the globe has got to.
-    const target = faceCamera(
-      facing.normal,
-      facing.north,
-      placement.position,
-      state.camera.position,
+    // In About, the shown place grows out of the globe: its country's provinces draw from it, the
+    // country (lightly) and its own province (more so) shade in.
+    const city = cities[getShownChapter()] ?? cities[0];
+    const marks = cityMarks(getAboutMarks());
+    for (const [country, provinces] of provinceOutlines.current) {
+      drawOutlines(
+        provinces,
+        country === city.countryCode ? marks.provinces : 0,
+      );
+    }
+    shadeCountry(
+      countryFills.current,
+      city.countryCode,
+      marks.shade,
+      surfaceColor,
+      strokeColor,
     );
+    shadeRegion(regionFills.current, city.regionCode, marks.shade, strokeColor);
+
+    // Opening About, or picking a place, turns it to face you: whatever the sweep and the
+    // visitor's hovering and dragging had added unwinds (the shortest way round).
+    const isAboutOpen = getIsAboutOpen();
+    const activeChapter = getActiveChapter();
+    if (
+      (isAboutOpen && !wasAboutOpen.current) ||
+      activeChapter !== lastActiveChapter.current
+    ) {
+      userSpin.current = 0;
+      userTilt.current = 0;
+    }
+    wasAboutOpen.current = isAboutOpen;
+    lastActiveChapter.current = activeChapter;
+
+    // The picked place head-on and north up (the first, through the hero), wherever the globe is.
+    const facing = facings[isAboutOpen ? activeChapter : 0] ?? facings[0];
+    const target =
+      facing === undefined
+        ? { x: 0, y: 0, z: 0 }
+        : faceCamera(
+            facing.normal,
+            facing.north,
+            placement.position,
+            state.camera.position,
+          );
     const drag = takeDrag();
     userSpin.current += drag.x * DRAG_RAD_PER_PX;
     userTilt.current = THREE.MathUtils.clamp(
@@ -318,7 +457,7 @@ export function GlobeStage() {
       group.rotation.y,
       shortestAngleTo(
         group.rotation.y,
-        target.y + SWEEP_SPIN_RAD * docking + userSpin.current,
+        target.y + SWEEP_SPIN_RAD * docking * (1 - about) + userSpin.current,
       ),
       damping,
       delta,
@@ -328,6 +467,30 @@ export function GlobeStage() {
       target.z,
       FOCUS_DAMPING,
       delta,
+    );
+
+    // The pin rises on the city, and the leader line runs from its tip out to the text.
+    const pin = pinRef.current;
+    if (pin === null) return;
+    const pinGrowth = easeSettle(marks.pin);
+    pin.visible = pinGrowth > 0.01;
+    if (!pin.visible) {
+      onAnchorMove(0, 0, 0);
+      return;
+    }
+    const tip = globe.getCoords(city.lat, city.lng, PIN_ALTITUDE);
+    pin.position.set(tip.x, tip.y, tip.z);
+    pin.scale.setScalar(PIN_HEIGHT * pinGrowth);
+    pinTip.set(tip.x, tip.y, tip.z);
+    group.localToWorld(pinTip);
+    // Nearer the camera than the globe's centre means the pin is on the facing side.
+    const isFacingCamera = pinTip.z > placement.position.z;
+    pinTip.project(state.camera);
+    const canvas = state.gl.domElement.getBoundingClientRect();
+    onAnchorMove(
+      canvas.left + ((pinTip.x + 1) / 2) * canvas.width,
+      canvas.top + ((1 - pinTip.y) / 2) * canvas.height,
+      isFacingCamera ? marks.line : 0,
     );
   });
 
@@ -344,6 +507,7 @@ export function GlobeStage() {
               >
                 <primitive object={globe} />
                 <Graticule radius={globeRadius} />
+                <CityPin ref={pinRef} color={strokeColor} />
               </group>
             </group>
           </group>

@@ -1,13 +1,24 @@
 import * as THREE from "three";
 
 const COUNTRIES_URL = "/geo/countries.geojson";
+const REGIONS_URL = "/geo/regions.geojson";
 
-/** Lifts the country layer just clear of the sphere's surface. */
+/** Both tiers live in one three-globe layer; regions sit a hair higher so they paint on top. */
 export const COUNTRY_ALTITUDE = 0.004;
+export const REGION_ALTITUDE = 0.006;
+
+const TRANSPARENT = "rgba(0, 0, 0, 0)";
+/** Province lines sit back from the national borders they subdivide. */
+const REGION_STROKE_ALPHA = 0.4;
+
+export type PolygonTier = "country" | "region";
 
 export interface GlobePolygon {
-  /** ISO_A3. */
+  /** ISO_A3 for countries, ISO 3166-2 for regions. */
   code: string;
+  /** ISO_A3 of the country it belongs to (its own code, for a country). */
+  country: string;
+  tier: PolygonTier;
   /** Read by three-globe's default `polygonGeoJsonGeometry` accessor. */
   geometry: object;
 }
@@ -32,7 +43,7 @@ function isGeoFeature(value: object): value is GeoFeature {
 
 /** three-globe hands accessors a bare `object`; this narrows it back to what we put in. */
 export function isGlobePolygon(value: object): value is GlobePolygon {
-  return "code" in value && "geometry" in value;
+  return "tier" in value && "code" in value;
 }
 
 async function fetchFeatures(url: string): Promise<GeoFeature[]> {
@@ -54,13 +65,27 @@ function readCode(feature: GeoFeature, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
-/** The world's country outlines, as one flat layer. */
+/** Country outlines plus the provinces/states of the journey's countries, as one flat layer. */
 export async function loadGlobePolygons(): Promise<GlobePolygon[]> {
-  const countries = await fetchFeatures(COUNTRIES_URL);
-  return countries.map((feature) => ({
-    code: readCode(feature, "ISO_A3"),
-    geometry: feature.geometry,
-  }));
+  const [countries, regions] = await Promise.all([
+    fetchFeatures(COUNTRIES_URL),
+    fetchFeatures(REGIONS_URL),
+  ]);
+
+  return [
+    ...countries.map((feature) => ({
+      code: readCode(feature, "ISO_A3"),
+      country: readCode(feature, "ISO_A3"),
+      tier: "country" as const,
+      geometry: feature.geometry,
+    })),
+    ...regions.map((feature) => ({
+      code: readCode(feature, "iso"),
+      country: readCode(feature, "country"),
+      tier: "region" as const,
+      geometry: feature.geometry,
+    })),
+  ];
 }
 
 /**
@@ -82,4 +107,31 @@ function hasMaterial(
   object: THREE.Object3D,
 ): object is THREE.Object3D & { material: THREE.Material | THREE.Material[] } {
   return "material" in object;
+}
+
+function rgba(color: THREE.Color, alpha: number): string {
+  // THREE.Color holds linear values; CSS strings are sRGB.
+  const srgb = color.getRGB({ r: 0, g: 0, b: 0 }, THREE.SRGBColorSpace);
+  const r = Math.round(srgb.r * 255);
+  const g = Math.round(srgb.g * 255);
+  const b = Math.round(srgb.b * 255);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** Stroke for one polygon: full strength for a national border, faded for a province line. */
+export function polygonStrokeColor(
+  polygon: GlobePolygon,
+  foreground: THREE.Color,
+): string {
+  return polygon.tier === "region"
+    ? rgba(foreground, REGION_STROKE_ALPHA)
+    : `#${foreground.getHexString()}`;
+}
+
+/** Cap fill for one polygon: countries take `surface` (the page colour), regions stay clear. */
+export function polygonCapColor(
+  polygon: GlobePolygon,
+  surface: THREE.Color,
+): string {
+  return polygon.tier === "region" ? TRANSPARENT : `#${surface.getHexString()}`;
 }

@@ -1,8 +1,7 @@
 order: 2
-title: Sweden
 # Placeholder until Q6.1 picks the place.
 place:
-  label: Stockholm, Sweden
+  label: Stockholm, Stockholm County, Sweden
   lat: 59.3293
   lng: 18.0686
 # Shares Germany's view: Sweden reads the right way up from there, and the two neighbours need no

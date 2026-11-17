@@ -17,6 +17,8 @@ import {
   useAboutProgressEffect,
   useIsAboutOpen,
 } from "@/components/app/about/aboutView";
+import type { Chapters } from "@/components/app/about/chapter";
+import { useLeaderLine } from "@/components/app/about/useLeaderLine";
 import { AboutLink } from "@/components/app/AboutLink";
 import { CornerLabels } from "@/components/app/CornerLabels";
 import { HeroSection } from "@/components/app/max-hero/HeroSection";
@@ -32,6 +34,8 @@ const LazyMaxScene = lazy(async () => {
 });
 
 export interface SiteExperienceProps {
+  /** The About story's places, in order. */
+  chapters: Chapters;
   /** `about` for a page loaded at /about: it opens straight onto About. */
   initialView?: SiteView;
 }
@@ -40,8 +44,11 @@ export interface SiteExperienceProps {
 // the corner — with About a screen off to the right, panned across to from the globe. All over a
 // single fixed canvas that every section's 3D shares.
 export function SiteExperience({
+  chapters,
   initialView = "portfolio",
 }: SiteExperienceProps) {
+  const { overlayRef, labelRef, lineRef, cityDotRef, drawFrom } =
+    useLeaderLine();
   const [isMounted, setIsMounted] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const isAboutOpen = useIsAboutOpen();
@@ -76,7 +83,7 @@ export function SiteExperience({
       <ScrollController />
       {isMounted && (
         <Suspense fallback={null}>
-          <LazyMaxScene />
+          <LazyMaxScene chapters={chapters} onAnchorMove={drawFrom} />
         </Suspense>
       )}
 
@@ -88,7 +95,37 @@ export function SiteExperience({
         <HeroSection />
         <ProjectsSection />
       </main>
-      <AboutPanel startsOpen={startsOnAbout} />
+      <AboutPanel
+        startsOpen={startsOnAbout}
+        chapters={chapters}
+        titleRef={labelRef}
+      />
+
+      {/* The one layer that has to clear the canvas, or the globe buries the line running out of
+          its own pin. Stacked layouts put the text under the globe, where a line says nothing. */}
+      <div
+        ref={overlayRef}
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-30 hidden md:block"
+      >
+        <svg className="h-full w-full">
+          <polyline
+            ref={lineRef}
+            fill="none"
+            strokeWidth="1"
+            pathLength={1}
+            strokeDasharray="1"
+            className="stroke-foreground-default"
+            style={{ opacity: 0, strokeDashoffset: 1 }}
+          />
+          <circle
+            ref={cityDotRef}
+            r="2"
+            className="fill-foreground-default"
+            style={{ opacity: 0 }}
+          />
+        </svg>
+      </div>
 
       <CornerLabels startsHidden={startsOnAbout} />
       <AboutBackButton startsShown={startsOnAbout} />

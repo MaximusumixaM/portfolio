@@ -1,7 +1,6 @@
 order: 1
-title: Canada
 place:
-  label: Vancouver, Canada
+  label: Vancouver, British Columbia, Canada
   lat: 49.2827
   lng: -123.1207
 countryCode: CAN

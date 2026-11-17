@@ -7,8 +7,8 @@ const chapters = defineCollection({
   loader: glob({ pattern: "*.yaml", base: "./src/content/chapters" }),
   schema: z.object({
     order: z.number().int(),
-    title: z.string(),
     place: z.object({
+      /** "City, Province/State, Country" — the heading the place is listed under. */
       label: z.string(),
       lat: z.number().min(-90).max(90),
       lng: z.number().min(-180).max(180),
