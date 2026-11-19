@@ -29,4 +29,21 @@ const chapters = defineCollection({
   }),
 });
 
-export const collections = { chapters };
+// The selected work, one file per project; `order` sets its place in the grid.
+const projects = defineCollection({
+  loader: glob({ pattern: "*.yaml", base: "./src/content/projects" }),
+  schema: z.object({
+    order: z.number().int(),
+    title: z.string(),
+    /** `feature` takes a bigger block of the grid (Tulip). */
+    tile: z.enum(["feature", "standard"]).default("standard"),
+    tags: z.array(z.string()),
+    /** The project's own colour (a hex), used only as a hint of it. */
+    color: z.string().regex(/^#[0-9a-f]{6}$/i),
+    summary: z.string(),
+    /** The project's parts, in reading order: the page's spreads and its progress strip. */
+    sections: z.array(z.object({ title: z.string(), text: z.string() })).min(1),
+  }),
+});
+
+export const collections = { chapters, projects };

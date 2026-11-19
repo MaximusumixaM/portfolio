@@ -42,13 +42,16 @@ export function AboutBackButton({ startsShown }: AboutBackButtonProps) {
         onClick={leaveAbout}
         className="font-display text-large font-light tracking-widest"
       >
-        {/* Sized and coloured by the text, thin-stroked to sit with the light type. */}
-        <ChevronLeft
-          aria-hidden="true"
-          className="size-[1em]"
-          strokeWidth={1.5}
-        />
-        back
+        {/* Sized and coloured by the text, thin-stroked to sit with the light type. Inline, so
+            `align-middle` centres it on the lowercase letters rather than the line box. */}
+        <span>
+          <ChevronLeft
+            aria-hidden="true"
+            className="mr-s inline size-[1em] align-middle"
+            strokeWidth={1.5}
+          />
+          back
+        </span>
       </Button>
     </div>
   );

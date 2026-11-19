@@ -4,6 +4,7 @@
   /* background */
   --theme-bg-default: var(--neutral-50);
   --theme-bg-default-hover: var(--neutral-100);
+  --theme-bg-secondary: var(--neutral-200);
   --theme-bg-accent-default: var(--blue-600);
   --theme-bg-accent-hover: var(--blue-700);
 
@@ -27,6 +28,7 @@
     /* background */
     --theme-bg-default: var(--neutral-950);
     --theme-bg-default-hover: var(--neutral-900);
+    --theme-bg-secondary: var(--neutral-800);
     --theme-bg-accent-default: var(--blue-600);
     --theme-bg-accent-hover: var(--blue-500);
 

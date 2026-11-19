@@ -1,0 +1,36 @@
+---
+import type { GetStaticPaths } from "astro";
+
+import { SiteExperience } from "../../components/app/SiteExperience";
+import { loadChapters } from "../../data/chapters";
+import { loadProjects } from "../../data/projects";
+import Layout from "../../layouts/Layout.astro";
+
+export const getStaticPaths = (async () => {
+  const projects = await loadProjects();
+  return projects.map(({ id }) => ({ params: { slug: id } }));
+}) satisfies GetStaticPaths;
+
+const { slug } = Astro.params;
+const [chapters, projects] = await Promise.all([
+  loadChapters(),
+  loadProjects(),
+]);
+const project = projects.find(({ id }) => id === slug);
+if (project === undefined) {
+  throw new Error(`Expected a project for /work/${String(slug)}`);
+}
+---
+
+<Layout title={`${project.title} - Max Nobell-Cluff`}>
+  <!-- As on /about: a refresh's scroll restoration would otherwise undo parking the grid in view. -->
+  <script is:inline slot="head">
+    history.scrollRestoration = "manual";
+  </script>
+  <SiteExperience
+    client:load
+    chapters={chapters}
+    projects={projects}
+    initialView={{ kind: "project", projectId: project.id }}
+  />
+</Layout>

@@ -179,6 +179,7 @@
   /* Color */
   --color-background-default: var(--theme-bg-default);
   --color-background-default-hover: var(--theme-bg-default-hover);
+  --color-background-secondary: var(--theme-bg-secondary);
   --color-background-accent-default: var(--theme-bg-accent-default);
   --color-background-accent-hover: var(--theme-bg-accent-hover);
 

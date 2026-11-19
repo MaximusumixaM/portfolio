@@ -11,10 +11,9 @@ import {
   jumpToSectionEnd,
   setScrollLocked,
 } from "@/components/app/scroll/smoothScroll";
+import type { SiteView } from "@/components/app/siteView";
 
 const ABOUT_PATH = "/about";
-
-export type SiteView = "portfolio" | "about";
 
 /** What we stamp on the history entry we push for About, so leaving can step back over it. */
 interface AboutEntry {
@@ -64,9 +63,10 @@ export function leaveAbout(): void {
  */
 export function useAboutRoute(initialView: SiteView): void {
   const isOpen = useIsAboutOpen();
+  const startsOnAbout = initialView.kind === "about";
 
   useEffect(() => {
-    if (initialView === "about") {
+    if (startsOnAbout) {
       // Behind About, the portfolio waits at its start, the hero played out.
       jumpToSectionEnd("hero");
       showAboutImmediately();
@@ -79,7 +79,7 @@ export function useAboutRoute(initialView: SiteView): void {
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [initialView]);
+  }, [startsOnAbout]);
 
   useEffect(() => {
     setScrollLocked(isOpen);

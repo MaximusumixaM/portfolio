@@ -28,12 +28,15 @@ const spacingGroups = Object.fromEntries(
 const backgroundColors = [
   "background-default",
   "background-default-hover",
+  "background-secondary",
   "background-accent-default",
   "background-accent-hover",
 ];
 const foregroundColors = [
   "foreground-default",
   "foreground-default-hover",
+  "foreground-secondary",
+  "foreground-tertiary",
   "foreground-accent-default",
   "foreground-on-accent",
 ];

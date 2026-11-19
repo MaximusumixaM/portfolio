@@ -24,8 +24,8 @@ export const PHASES = {
   reveal: [0.97, 1],
 } as const;
 
-/** Where the portfolio starts rising in under the hero, partway through the globe's sweep. */
-export const PORTFOLIO_RISE_AT = 0.5;
+/** Where the portfolio's title comes up into view: the moment the globe starts its climb. */
+export const PORTFOLIO_RISE_AT = PHASES.dock[0];
 
 /** The docked globe's radius on screen, in CSS pixels. */
 export const DOCK_RADIUS_PX = 64;

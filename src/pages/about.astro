@@ -1,9 +1,13 @@
 ---
 import { SiteExperience } from "../components/app/SiteExperience";
 import { loadChapters } from "../data/chapters";
+import { loadProjects } from "../data/projects";
 import Layout from "../layouts/Layout.astro";
 
-const chapters = await loadChapters();
+const [chapters, projects] = await Promise.all([
+  loadChapters(),
+  loadProjects(),
+]);
 ---
 
 <Layout title="About - Max Nobell-Cluff">
@@ -12,5 +16,10 @@ const chapters = await loadChapters();
   <script is:inline slot="head">
     history.scrollRestoration = "manual";
   </script>
-  <SiteExperience client:load chapters={chapters} initialView="about" />
+  <SiteExperience
+    client:load
+    chapters={chapters}
+    projects={projects}
+    initialView={{ kind: "about" }}
+  />
 </Layout>

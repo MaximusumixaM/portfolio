@@ -1,29 +1,50 @@
+import type { Project } from "./project";
+import { ProjectTile } from "./ProjectTile";
+
 import {
+  DOCK_RADIUS_PX,
+  DOCK_TOP_PX,
   HERO_SCROLL_SCREENS,
   PORTFOLIO_RISE_AT,
 } from "@/components/app/max-hero/heroTransition";
 import { sectionTrackId } from "@/components/app/scroll/timeline";
-import { BodyText, Heading } from "@/components/peduncle/Typography";
+import { Heading } from "@/components/peduncle/Typography";
 
-/** Pulls the portfolio up over the hero's tail, so it starts rising just before the globe docks. */
-const HERO_OVERLAP_SCREENS = (1 - PORTFOLIO_RISE_AT) * HERO_SCROLL_SCREENS;
+/** The header's lowest point: the docked globe at rest. The work starts just below it. */
+const HEADER_BOTTOM_PX = DOCK_TOP_PX + DOCK_RADIUS_PX * 2;
+const HEADER_CLEARANCE = `calc(${String(HEADER_BOTTOM_PX)}px + var(--spacing-s))`;
 
-// Placeholder for the full-screen portfolio, which rises in under the docking globe. Positioned so
-// it paints over the hero's pinned screen; still under the canvas (z-20), so the globe stays on top.
-export function ProjectsSection() {
+// Pulled up over the hero's tail so the title (not the section's edge) comes into view at
+// PORTFOLIO_RISE_AT. The clearance is capped so the page always scrolls far enough to finish the hero.
+const HERO_OVERLAP_VH = (1 - PORTFOLIO_RISE_AT) * HERO_SCROLL_SCREENS * 100;
+const MAX_CLEARANCE_VH = PORTFOLIO_RISE_AT * HERO_SCROLL_SCREENS * 100;
+const MARGIN_TOP = `calc(${String(-HERO_OVERLAP_VH)}vh - min(${HEADER_CLEARANCE}, ${String(MAX_CLEARANCE_VH)}vh))`;
+
+export interface ProjectsSectionProps {
+  projects: readonly Project[];
+}
+
+// The selected work on one screen: Tulip takes a bigger block, the rest one tile each, the rows
+// sharing whatever height is left under the header (phones swipe through them one at a time). It's
+// the page's last screen, so it settles exactly into view. Paints over the hero's pinned screen,
+// under the canvas (z-20).
+export function ProjectsSection({ projects }: ProjectsSectionProps) {
   return (
     <section
       id={sectionTrackId("projects")}
       aria-labelledby="projects-heading"
-      className="relative z-10 flex min-h-screen w-full flex-col justify-center gap-m bg-background-default px-m md:px-l"
-      style={{ marginTop: `${String(-HERO_OVERLAP_SCREENS * 100)}vh` }}
+      className="relative z-10 flex h-screen w-full flex-col gap-m bg-background-default px-m pb-m md:px-l md:pb-l"
+      style={{ marginTop: MARGIN_TOP, paddingTop: HEADER_CLEARANCE }}
     >
       <Heading level="h2" id="projects-heading">
-        Projects
+        Selected work
       </Heading>
-      <BodyText className="text-foreground-secondary">
-        Placeholder: projects go here.
-      </BodyText>
+      {/* Phones: one project at a time, swiped sideways, the next peeking in. Wider: the grid. */}
+      <ul className="flex min-h-0 flex-1 snap-x snap-mandatory gap-s overflow-x-auto overscroll-x-contain md:grid md:auto-rows-fr md:grid-cols-2 md:overflow-visible lg:grid-cols-3 lg:gap-m">
+        {projects.map((project) => (
+          <ProjectTile key={project.id} project={project} />
+        ))}
+      </ul>
     </section>
   );
 }
