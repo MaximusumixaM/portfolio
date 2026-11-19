@@ -189,6 +189,7 @@ export function ProjectPage({
         <ProgressStrip
           projectId={project.id}
           sections={project.sections}
+          currentSection={currentSection}
           onJump={jumpToSection}
         />
       </div>
@@ -262,7 +263,7 @@ function StepLink({ project, direction, icon: Icon }: StepLinkProps) {
         size="icon"
         disabled
         aria-label={STEP_LABEL[direction]}
-        className="text-xl"
+        className="text-xl pointer-coarse:p-s"
       >
         {arrow}
       </Button>
@@ -270,7 +271,13 @@ function StepLink({ project, direction, icon: Icon }: StepLinkProps) {
   }
   const label = `${STEP_LABEL[direction]}: ${project.title}`;
   return (
-    <Button asChild variant="ghost" size="icon" className="text-xl">
+    <Button
+      asChild
+      variant="ghost"
+      size="icon"
+      // A bigger target for fingers.
+      className="text-xl pointer-coarse:p-s"
+    >
       <a
         href={projectPath(project.id)}
         aria-label={label}
@@ -290,11 +297,18 @@ function StepLink({ project, direction, icon: Icon }: StepLinkProps) {
 interface ProgressStripProps {
   projectId: string;
   sections: Project["sections"];
+  /** The one being read, announced as the current location. */
+  currentSection: number;
   onJump: (index: number) => void;
 }
 
 /** The sections as a strip of segments that fill as you read; each names itself on hover and jumps there. */
-function ProgressStrip({ projectId, sections, onJump }: ProgressStripProps) {
+function ProgressStrip({
+  projectId,
+  sections,
+  currentSection,
+  onJump,
+}: ProgressStripProps) {
   return (
     <nav aria-label="Sections">
       <ol className="flex gap-xs">
@@ -302,11 +316,12 @@ function ProgressStrip({ projectId, sections, onJump }: ProgressStripProps) {
           <li key={section.title} className="min-w-0 flex-1">
             <a
               href={`#${sectionId(projectId, index)}`}
+              aria-current={index === currentSection ? "location" : undefined}
               onClick={(event) => {
                 event.preventDefault();
                 onJump(index);
               }}
-              className="group/segment flex flex-col gap-xs py-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
+              className="group/segment flex flex-col gap-xs py-xs pointer-coarse:py-s focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
             >
               <span className="relative h-xs overflow-hidden rounded-round bg-background-secondary">
                 <span
@@ -315,8 +330,9 @@ function ProgressStrip({ projectId, sections, onJump }: ProgressStripProps) {
                   style={{ scale: "0 1" }}
                 />
               </span>
-              {/* Touch has no hover, so the names stay showing there. */}
-              <span className="truncate text-small text-foreground-secondary transition-opacity duration-300 pointer-fine:opacity-0 pointer-fine:group-hover/segment:opacity-100 pointer-fine:group-focus-visible/segment:opacity-100">
+              {/* Touch has no hover to reveal them, and they'd only truncate on a phone; the header
+                  names the section being read instead. */}
+              <span className="truncate text-small text-foreground-secondary opacity-0 transition-opacity duration-300 pointer-coarse:hidden group-hover/segment:opacity-100 group-focus-visible/segment:opacity-100">
                 {section.title}
               </span>
             </a>
@@ -405,7 +421,8 @@ function EndLinks({ previous, next }: EndLinksProps) {
   return (
     <nav
       aria-label="More projects"
-      className="flex items-start justify-between gap-m px-m md:px-l"
+      // Stacked on phones, where two long titles side by side would squeeze each other.
+      className="flex flex-col gap-m px-m sm:flex-row sm:items-start sm:justify-between md:px-l"
     >
       {previous !== undefined && (
         <EndLink project={previous} direction="previous" />
@@ -440,7 +457,9 @@ function EndLink({ project, direction }: EndLinkProps) {
       className={cn(
         "h-auto flex-col gap-xs",
         // The next one sits on the right even when there's no previous.
-        isNext ? "ml-auto items-end text-right" : "items-start text-left",
+        isNext
+          ? "items-end self-end text-right sm:ml-auto"
+          : "items-start self-start text-left",
       )}
     >
       <a

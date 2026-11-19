@@ -4,6 +4,7 @@ import { useOpenProject } from "./openProject";
 import { projectTileId, type Project } from "./project";
 import { ProjectPage } from "./ProjectPage";
 
+import { revealElement } from "@/components/app/scroll/smoothScroll";
 import { usePrefersReducedMotion } from "@/components/lib/usePrefersReducedMotion";
 
 const GROW_MS = 650;
@@ -61,6 +62,9 @@ export function ProjectView({ projects, initialProjectId }: ProjectViewProps) {
     const layer = layerRef.current;
     const content = contentRef.current;
     if (projectId === null || layer === null || content === null) return;
+    // After stepping through projects on a phone, its tile can be off-screen down the stack.
+    const tile = document.getElementById(projectTileId(projectId));
+    if (tile !== null) revealElement(tile);
     const tileClip = findTileClip(projectId, layer);
     const animations =
       reducedMotion.current || tileClip === null

@@ -24,23 +24,22 @@ export interface ProjectsSectionProps {
   projects: readonly Project[];
 }
 
-// The selected work on one screen: Tulip takes a bigger block, the rest one tile each, the rows
-// sharing whatever height is left under the header (phones swipe through them one at a time). It's
-// the page's last screen, so it settles exactly into view. Paints over the hero's pinned screen,
-// under the canvas (z-20).
+// The selected work. From tablets up it's one screen: Tulip takes a bigger block, the rest one tile
+// each, the rows sharing whatever height is left under the header; as the page's last screen it
+// settles exactly into view. Phones stack the tiles and scroll. Paints over the hero's pinned
+// screen, under the canvas (z-20).
 export function ProjectsSection({ projects }: ProjectsSectionProps) {
   return (
     <section
       id={sectionTrackId("projects")}
       aria-labelledby="projects-heading"
-      className="relative z-10 flex h-screen w-full flex-col gap-m bg-background-default px-m pb-m md:px-l md:pb-l"
+      className="relative z-10 flex min-h-dvh w-full flex-col gap-m bg-background-default px-m pb-m md:h-dvh md:px-l md:pb-l"
       style={{ marginTop: MARGIN_TOP, paddingTop: HEADER_CLEARANCE }}
     >
       <Heading level="h2" id="projects-heading">
         Selected work
       </Heading>
-      {/* Phones: one project at a time, swiped sideways, the next peeking in. Wider: the grid. */}
-      <ul className="flex min-h-0 flex-1 snap-x snap-mandatory gap-s overflow-x-auto overscroll-x-contain md:grid md:auto-rows-fr md:grid-cols-2 md:overflow-visible lg:grid-cols-3 lg:gap-m">
+      <ul className="flex flex-col gap-s md:grid md:min-h-0 md:flex-1 md:auto-rows-fr md:grid-cols-2 lg:grid-cols-3 lg:gap-m">
         {projects.map((project) => (
           <ProjectTile key={project.id} project={project} />
         ))}

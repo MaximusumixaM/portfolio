@@ -50,6 +50,19 @@ export function jumpToSectionEnd(id: SectionId): void {
   else lenis.scrollTo(top, { immediate: true, force: true });
 }
 
+/** Brings an element into view at once, centred, unless it's already fully on screen. */
+export function revealElement(element: HTMLElement): void {
+  const box = element.getBoundingClientRect();
+  if (box.top >= 0 && box.bottom <= window.innerHeight) return;
+  const top =
+    box.top +
+    window.scrollY -
+    Math.max(0, (window.innerHeight - box.height) / 2);
+  // Through Lenis when it's running the page, or it would carry on from its old position.
+  if (lenis === null) window.scrollTo({ top, behavior: "instant" });
+  else lenis.scrollTo(top, { immediate: true, force: true });
+}
+
 /** Holds the page still (or lets it go) — while About is over it, the portfolio stays put. */
 export function setScrollLocked(isLocked: boolean): void {
   if (isLocked) lenis?.stop();

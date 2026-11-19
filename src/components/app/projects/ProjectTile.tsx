@@ -11,8 +11,8 @@ export interface ProjectTileProps {
 /**
  * One project: a block washed faintly in its colour (where its image will go), with its title and
  * tags set inside at the bottom; the summary slides open beneath them on hover. The whole block is
- * the link into the project, which grows out of it. On phones it's one swipeable page; in the grid
- * it takes whatever height its row leaves.
+ * the link into the project, which grows out of it. Stacked on phones; in the grid it takes
+ * whatever height its row leaves.
  */
 export function ProjectTile({ project }: ProjectTileProps) {
   const isFeature = project.tile === "feature";
@@ -20,8 +20,9 @@ export function ProjectTile({ project }: ProjectTileProps) {
   return (
     <li
       className={cn(
-        "relative flex w-5/6 shrink-0 snap-start hover:z-10 md:w-auto md:min-h-0",
-        isFeature && "md:col-span-2 lg:row-span-2",
+        // Stacked on phones, each its own shape (Tulip taller); in the grid, its row's height.
+        "relative flex focus-within:z-10 hover:z-10 md:aspect-auto md:min-h-0",
+        isFeature ? "aspect-square md:col-span-2 lg:row-span-2" : "aspect-4/3",
       )}
     >
       <a
@@ -32,12 +33,13 @@ export function ProjectTile({ project }: ProjectTileProps) {
           event.preventDefault();
           enterProject(project.id);
         }}
-        // Grows a touch on hover, lifted over its neighbours (by the li) so the growth isn't clipped.
-        className="group relative flex w-full flex-col justify-end overflow-hidden rounded-xl p-m transition-transform duration-500 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus motion-safe:hover:scale-102"
+        // Grows a touch on hover or keyboard focus, lifted over its neighbours (by the li) so the
+        // growth isn't clipped.
+        className="group relative flex w-full flex-col justify-end overflow-hidden rounded-xl p-m transition-transform duration-500 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus motion-safe:hover:scale-102 motion-safe:focus-visible:scale-102"
       >
         <div
           aria-hidden="true"
-          className="absolute inset-0 opacity-15 transition-opacity duration-500 ease-out group-hover:opacity-25"
+          className="absolute inset-0 opacity-15 transition-opacity duration-500 ease-out group-hover:opacity-25 group-focus-visible:opacity-25"
           style={{ backgroundColor: project.color }}
         />
         <div className="relative flex flex-col gap-xs">
