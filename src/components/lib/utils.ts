@@ -39,6 +39,7 @@ const foregroundColors = [
   "foreground-tertiary",
   "foreground-accent-default",
   "foreground-on-accent",
+  "foreground-brand",
 ];
 const borderColors = [
   "border-default",

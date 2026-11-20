@@ -26,4 +26,8 @@
   --blue-800: #1e40af;
   --blue-900: #1e3a8a;
   --blue-950: #172554;
+
+  /* crimson — the brand's: a deep, wine-dark red in the MAX wordmark's family */
+  --crimson-400: #d1577a;
+  --crimson-700: #8e1838;
 }

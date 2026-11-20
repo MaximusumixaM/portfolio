@@ -17,14 +17,15 @@ import {
 import type { Chapters } from "@/components/app/about/chapter";
 import { useLeaderLine } from "@/components/app/about/useLeaderLine";
 import { AboutLink } from "@/components/app/AboutLink";
-import { CornerLabels } from "@/components/app/CornerLabels";
+import { HeaderBackdrop } from "@/components/app/HeaderBackdrop";
 import { HeroSection } from "@/components/app/max-hero/HeroSection";
-import { NavPill } from "@/components/app/max-hero/NavPill";
+import { NavWordmark } from "@/components/app/max-hero/NavWordmark";
 import { useOpenProject } from "@/components/app/projects/openProject";
 import type { Project } from "@/components/app/projects/project";
 import { useProjectRoute } from "@/components/app/projects/projectRoute";
 import { ProjectsSection } from "@/components/app/projects/ProjectsSection";
 import { ProjectView } from "@/components/app/projects/ProjectView";
+import { RoleLabel } from "@/components/app/RoleLabel";
 import { ScrollController } from "@/components/app/scroll/ScrollController";
 import { PORTFOLIO_VIEW, type SiteView } from "@/components/app/siteView";
 import { usePrefersReducedMotion } from "@/components/lib/usePrefersReducedMotion";
@@ -139,10 +140,11 @@ export function SiteExperience({
           </svg>
         </div>
 
-        <CornerLabels startsHidden={startsOnAbout} />
+        <HeaderBackdrop />
+        <RoleLabel startsHidden={startsOnAbout} />
         <AboutBackButton startsShown={startsOnAbout} />
         <AboutLink />
-        <NavPill />
+        <NavWordmark />
       </div>
       <ProjectView projects={projects} initialProjectId={initialProjectId} />
     </>

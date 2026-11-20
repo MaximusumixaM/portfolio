@@ -8,7 +8,8 @@ import { collectFills, shadeCountry, shadeRegion } from "./fillShade";
 import { FormationRing } from "./FormationRing";
 import {
   isGlobeDragging,
-  isGlobeIdlingUnderPointer,
+  isGlobeGrowing,
+  setGlobeResting,
   takeDrag,
 } from "./globeControl";
 import {
@@ -38,11 +39,14 @@ import {
 } from "@/components/app/about/aboutView";
 import { cityMarks } from "@/components/app/about/cityMarks";
 import {
+  DOCKED_AT,
+  DOCK_HOVER_GROW_MS,
   DOCK_HOVER_RADIUS_PX,
+  DOCK_INSET_PX,
   DOCK_RADIUS_PX,
-  DOCK_RIGHT_PX,
   DOCK_TOP_PX,
   PHASES,
+  dockRightPx,
 } from "@/components/app/max-hero/heroTransition";
 import {
   FORMATION_SPHERE_RADIUS,
@@ -65,8 +69,14 @@ const DRAG_DAMPING = 24;
 const SWEEP_SPIN_RAD = 1.2;
 /** Slow idle turn while hovered, in radians a second. */
 const HOVER_SPIN_RAD_PER_S = 0.6;
-/** How quickly the hover's grow and spin come and go. */
-const HOVER_DAMPING = 8;
+/** How quickly the hover's grow comes on: slowly, ~95% of the way over DOCK_HOVER_GROW_MS. */
+const GROW_DAMPING = 3000 / DOCK_HOVER_GROW_MS;
+/** And how quickly it shrinks back once the pointer leaves: brisker. */
+const SHRINK_DAMPING = 3;
+/** How quickly the grown globe's idle spin comes and goes. */
+const SPIN_DAMPING = 4;
+/** Below this much hover it has all but shrunk back to the icon, which can take over again. */
+const HOVER_SETTLED = 0.02;
 /** Drag: radians of turn per pixel of pointer travel, and how far it may tip north or south. */
 const DRAG_RAD_PER_PX = 0.02;
 const MAX_DRAG_TILT_RAD = 1;
@@ -157,8 +167,10 @@ export function GlobeStage({ cities, onAnchorMove }: GlobeStageProps) {
   /** Turn and tip the visitor has added by hovering and dragging, kept — it rests where it's left. */
   const userSpin = useRef(0);
   const userTilt = useRef(0);
-  /** 0–1: how far into its hovered state (grown, idling round) the docked globe is. */
+  /** 0–1: how far the docked globe has grown under a lingering hover. */
   const hover = useRef(0);
+  /** 0–1: how far into its hovered idle spin it is (from the moment it's hovered). */
+  const spin = useRef(0);
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const polygons = useGlobePolygons();
@@ -239,18 +251,25 @@ export function GlobeStage({ cities, onAnchorMove }: GlobeStageProps) {
   /**
    * The top-right corner it docks in (converted from the shared pixel metrics to world units), and
    * the control point that bends the sweep there: off the straight line's midpoint, out to the right.
+   * `centreFor` places a docked globe of any radius tucked into the corner, so hovering grows it
+   * down and to the left, out of the icon.
    */
   const dock = useMemo(() => {
     const pixelToWorld = viewport.height / size.height;
-    const x = (size.width / 2 - DOCK_RIGHT_PX - DOCK_RADIUS_PX) * pixelToWorld;
-    const y = (size.height / 2 - DOCK_TOP_PX - DOCK_RADIUS_PX) * pixelToWorld;
+    const centreFor = (radiusPx: number) => ({
+      x:
+        (size.width / 2 - dockRightPx(size.width) - DOCK_INSET_PX - radiusPx) *
+        pixelToWorld,
+      y:
+        (size.height / 2 - DOCK_TOP_PX - DOCK_INSET_PX - radiusPx) *
+        pixelToWorld,
+    });
+    const rest = centreFor(DOCK_RADIUS_PX);
     return {
-      x,
-      y,
-      radius: DOCK_RADIUS_PX * pixelToWorld,
-      hoverRadius: DOCK_HOVER_RADIUS_PX * pixelToWorld,
-      bendX: x / 2 + y * SWEEP_BEND,
-      bendY: y / 2 - x * SWEEP_BEND,
+      pixelToWorld,
+      centreFor,
+      bendX: rest.x / 2 + rest.y * SWEEP_BEND,
+      bendY: rest.y / 2 - rest.x * SWEEP_BEND,
     };
   }, [size.width, size.height, viewport.height]);
 
@@ -310,21 +329,30 @@ export function GlobeStage({ cities, onAnchorMove }: GlobeStageProps) {
     // curve, shrinking as it goes, taking the formation ring along — while the borders keep drawing.
     const docking = easeSettle(phase(progress, PHASES.dock));
     // Quadratic Bézier from the centre (origin) through the bend towards the corner.
-    const bendWeight = 2 * docking * (1 - docking);
-    const cornerWeight = docking * docking;
-    const heroX = dock.bendX * bendWeight + dock.x * cornerWeight;
-    const heroY = dock.bendY * bendWeight + dock.y * cornerWeight;
+    const isGrowing = isGlobeGrowing();
     hover.current = THREE.MathUtils.damp(
       hover.current,
-      isGlobeIdlingUnderPointer() ? 1 : 0,
-      HOVER_DAMPING,
+      isGrowing ? 1 : 0,
+      isGrowing ? GROW_DAMPING : SHRINK_DAMPING,
       delta,
     );
-    const dockedRadius = THREE.MathUtils.lerp(
-      dock.radius,
-      dock.hoverRadius,
+    spin.current = THREE.MathUtils.damp(
+      spin.current,
+      isGrowing ? 1 : 0,
+      SPIN_DAMPING,
+      delta,
+    );
+    const dockedRadiusPx = THREE.MathUtils.lerp(
+      DOCK_RADIUS_PX,
+      DOCK_HOVER_RADIUS_PX,
       hover.current,
     );
+    const corner = dock.centreFor(dockedRadiusPx);
+    const bendWeight = 2 * docking * (1 - docking);
+    const cornerWeight = docking * docking;
+    const heroX = dock.bendX * bendWeight + corner.x * cornerWeight;
+    const heroY = dock.bendY * bendWeight + corner.y * cornerWeight;
+    const dockedRadius = dockedRadiusPx * dock.pixelToWorld;
     const heroRadius = THREE.MathUtils.lerp(
       FORMATION_SPHERE_RADIUS,
       dockedRadius,
@@ -334,6 +362,17 @@ export function GlobeStage({ cities, onAnchorMove }: GlobeStageProps) {
     // Opening About carries it from wherever it is (the corner, normally) into About's left half,
     // growing as the page pans across underneath.
     const about = getAboutProgress();
+
+    // Settled in the corner, it rests as the Earth icon (the link draws it) — and comes back once a
+    // hover has lingered (to grow), or it's dragged or asked to open About.
+    const isResting =
+      progress >= DOCKED_AT &&
+      about === 0 &&
+      !isGrowing &&
+      !isGlobeDragging() &&
+      hover.current < HOVER_SETTLED;
+    placement.visible = !isResting;
+    setGlobeResting(isResting);
     placement.position.set(
       THREE.MathUtils.lerp(heroX, aboutLayout.x, about),
       THREE.MathUtils.lerp(heroY, aboutLayout.y, about),
@@ -444,7 +483,7 @@ export function GlobeStage({ cities, onAnchorMove }: GlobeStageProps) {
       MAX_DRAG_TILT_RAD,
     );
     if (!prefersReducedMotion) {
-      userSpin.current += HOVER_SPIN_RAD_PER_S * hover.current * delta;
+      userSpin.current += HOVER_SPIN_RAD_PER_S * spin.current * delta;
     }
     const damping = isGlobeDragging() ? DRAG_DAMPING : FOCUS_DAMPING;
     group.rotation.x = THREE.MathUtils.damp(

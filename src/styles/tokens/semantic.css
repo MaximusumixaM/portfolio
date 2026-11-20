@@ -15,6 +15,7 @@
   --theme-fg-tertiary: var(--neutral-500);
   --theme-fg-accent-default: var(--blue-600);
   --theme-fg-on-accent: var(--neutral-50);
+  --theme-fg-brand: var(--crimson-700);
 
   /* border */
   --theme-border-default: var(--neutral-200);
@@ -39,6 +40,8 @@
     --theme-fg-tertiary: var(--neutral-400);
     --theme-fg-accent-default: var(--blue-400);
     --theme-fg-on-accent: var(--neutral-50);
+    /* Lifted, so the deep crimson still reads on black. */
+    --theme-fg-brand: var(--crimson-400);
 
     /* border */
     --theme-border-default: var(--neutral-800);

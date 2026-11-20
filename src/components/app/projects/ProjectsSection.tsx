@@ -2,17 +2,15 @@ import type { Project } from "./project";
 import { ProjectTile } from "./ProjectTile";
 
 import {
-  DOCK_RADIUS_PX,
-  DOCK_TOP_PX,
   HERO_SCROLL_SCREENS,
+  HEADER_HEIGHT_PX,
   PORTFOLIO_RISE_AT,
 } from "@/components/app/max-hero/heroTransition";
 import { sectionTrackId } from "@/components/app/scroll/timeline";
 import { Heading } from "@/components/peduncle/Typography";
 
-/** The header's lowest point: the docked globe at rest. The work starts just below it. */
-const HEADER_BOTTOM_PX = DOCK_TOP_PX + DOCK_RADIUS_PX * 2;
-const HEADER_CLEARANCE = `calc(${String(HEADER_BOTTOM_PX)}px + var(--spacing-s))`;
+/** The work starts just below the header. */
+const HEADER_CLEARANCE = `${String(HEADER_HEIGHT_PX)}px`;
 
 // Pulled up over the hero's tail so the title (not the section's edge) comes into view at
 // PORTFOLIO_RISE_AT. The clearance is capped so the page always scrolls far enough to finish the hero.

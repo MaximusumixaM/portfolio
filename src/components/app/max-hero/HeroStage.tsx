@@ -4,6 +4,7 @@ import * as THREE from "three";
 
 import { createFlexMaterial, type FlexMaterial } from "./flexMaterial";
 import {
+  HERO_WORDMARK_HALF_HEIGHT_VAR,
   NAV_LOGO_CENTER_Y_PX,
   NAV_LOGO_HEIGHT_PX,
   PHASES,
@@ -15,6 +16,7 @@ import {
   FORMATION_SPHERE_RADIUS,
 } from "./sceneMetrics";
 import { usePointerRef } from "./usePointerRef";
+import { isWordmarkHovered } from "./wordmarkControl";
 
 import {
   easeSettle,
@@ -37,6 +39,10 @@ const FLOAT_SPEEDS = [0.62, 0.5, 0.7];
 const FLOAT_AMPS = [0.075, 0.055, 0.065];
 /** Overall on-screen size of the landing wordmark, on top of the responsive fit. */
 const WORDMARK_SCALE = 0.8;
+/** How much bigger the parked wordmark grows while hovered (or keyboard-focused). */
+const NAV_HOVER_GROW = 0.08;
+/** How quickly that grow comes and goes. */
+const NAV_HOVER_DAMPING = 10;
 /** Fraction of the formation circle's diameter the MAX label spans once it has shrunk into it. */
 const FACE_FILL = 0.82;
 /** Peak tilt (radians) mid-rise, showing the letters' thickness on the way to the nav. */
@@ -51,6 +57,8 @@ const FLATTEN_RANGE: readonly [number, number] = [
 
 export function HeroStage() {
   const assemblyRef = useRef<THREE.Group>(null);
+  /** 0–1: how far into its hover grow the parked wordmark is. */
+  const navHover = useRef(0);
   const faceRef = useRef<THREE.Group>(null);
   const meshes = useRef(new Map<string, THREE.Mesh>());
   const viewport = useThree((state) => state.viewport);
@@ -90,6 +98,16 @@ export function HeroStage() {
     const byHeight = (viewport.height * 0.7) / wordmark.height;
     return Math.min(byWidth, byHeight, 1) * WORDMARK_SCALE;
   }, [viewport.width, viewport.height, wordmark.width, wordmark.height]);
+
+  // The hero's words sit above and below the wordmark (in the DOM); tell them how tall it is.
+  useEffect(() => {
+    const pixelToWorld = viewport.height / size.height;
+    const halfHeightPx = (heroScale * wordmark.height) / 2 / pixelToWorld;
+    document.documentElement.style.setProperty(
+      HERO_WORDMARK_HALF_HEIGHT_VAR,
+      `${String(halfHeightPx)}px`,
+    );
+  }, [heroScale, wordmark.height, viewport.height, size.height]);
 
   /** Size the label shrinks to so it sits inside the circle the arcs draw. */
   const faceScale = useMemo(
@@ -157,16 +175,23 @@ export function HeroStage() {
         FRONT_CLEARANCE) *
       arcs;
     // Being nearer the camera magnifies the wordmark; cancelling that exactly keeps the lift
-    // purely a depth-ordering trick, so the nav landing stays framed on the pill's own slot.
+    // purely a depth-ordering trick, so the nav landing stays framed on its own slot.
     const perspective = (CAMERA_DISTANCE - liftZ) / CAMERA_DISTANCE;
 
-    // Rise + shrink into the nav slot, converting the pill's pixel metrics to world units.
+    // Rise + shrink into the nav slot, converting the nav's pixel metrics to world units.
     const pixelToWorld = viewport.height / size.height;
     const navLogoWorldHeight = NAV_LOGO_HEIGHT_PX * pixelToWorld;
     const navScale = navLogoWorldHeight / (wordmark.height * faceScale);
     const navY = viewport.height / 2 - NAV_LOGO_CENTER_Y_PX * pixelToWorld;
+    navHover.current = THREE.MathUtils.damp(
+      navHover.current,
+      isWordmarkHovered() ? 1 : 0,
+      NAV_HOVER_DAMPING,
+      delta,
+    );
+    const hoverGrow = 1 + NAV_HOVER_GROW * navHover.current * rise;
     assembly.scale.setScalar(
-      THREE.MathUtils.lerp(1, navScale, rise) * perspective,
+      THREE.MathUtils.lerp(1, navScale, rise) * perspective * hoverGrow,
     );
     assembly.position.set(
       0,

@@ -4,6 +4,10 @@ import { useCallback, useRef } from "react";
 import { leaveAbout } from "./aboutRoute";
 import { useAboutProgressEffect, useIsAboutOpen } from "./aboutView";
 
+import {
+  HEADER_ROW_HEIGHT_PX,
+  HEADER_ROW_TOP_PX,
+} from "@/components/app/max-hero/heroTransition";
 import { Button } from "@/components/peduncle/Button";
 
 // Takes the top-left from the name labels while About is open, and pans back to the portfolio.
@@ -30,12 +34,15 @@ export function AboutBackButton({ startsShown }: AboutBackButtonProps) {
       ref={wrapperRef}
       data-about-layer=""
       inert={!isOpen}
-      className="fixed left-m top-m z-40"
-      style={
-        startsShown
+      // Centred in the header row, where the role label was.
+      className="fixed left-m z-40 flex items-center md:left-l"
+      style={{
+        top: `${String(HEADER_ROW_TOP_PX)}px`,
+        height: `${String(HEADER_ROW_HEIGHT_PX)}px`,
+        ...(startsShown
           ? { opacity: 1, visibility: "visible" }
-          : { opacity: 0, visibility: "hidden" }
-      }
+          : { opacity: 0, visibility: "hidden" }),
+      }}
     >
       <Button
         variant="ghost"

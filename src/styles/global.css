@@ -189,6 +189,7 @@
   --color-foreground-tertiary: var(--theme-fg-tertiary);
   --color-foreground-accent-default: var(--theme-fg-accent-default);
   --color-foreground-on-accent: var(--theme-fg-on-accent);
+  --color-foreground-brand: var(--theme-fg-brand);
 
   --color-border-default: var(--theme-border-default);
   --color-border-strong: var(--theme-border-strong);
