@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { NAV_LOGO_HEIGHT_PX, NAV_WORDMARK_SETTLED_AT } from "./heroTransition";
+import { WORDMARK_ASPECT } from "./sceneMetrics";
 import { setWordmarkHovered } from "./wordmarkControl";
 
 import { HockeyGame } from "@/components/app/HockeyGame";
@@ -14,9 +15,6 @@ import {
   DialogTrigger,
 } from "@/components/peduncle/Dialog";
 import { Heading } from "@/components/peduncle/Typography";
-
-/** Wordmark aspect ratio, from the source SVG viewBox (1047 x 389). */
-const LOGO_ASPECT = 1047 / 389;
 
 // Where the settled 3D wordmark lands (top-centre), and the hockey easter egg's way in: an invisible
 // click target over the wordmark, which itself lives in the click-through canvas. Hovering it (or
@@ -65,7 +63,7 @@ export function NavWordmark() {
             aria-hidden="true"
             style={{
               height: `${String(NAV_LOGO_HEIGHT_PX)}px`,
-              width: `${String(Math.round(NAV_LOGO_HEIGHT_PX * LOGO_ASPECT))}px`,
+              width: `${String(Math.round(NAV_LOGO_HEIGHT_PX * WORDMARK_ASPECT))}px`,
             }}
           />
         </DialogTrigger>

@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { TessellateModifier } from "three/examples/jsm/modifiers/TessellateModifier.js";
 
+import { WORDMARK_HEIGHT } from "./sceneMetrics";
+
 import maxWordmarkSvg from "@/assets/max-wordmark.svg?raw";
 
 export interface LetterGeometry {
@@ -19,8 +21,6 @@ export interface Wordmark {
   height: number;
 }
 
-/** Target height of the whole wordmark in world units — camera framing is tuned to this. */
-const WORDMARK_HEIGHT = 3.4;
 /** Extrusion depth as a fraction of the wordmark height. */
 const DEPTH_RATIO = 0.19;
 /** Corner-fillet radius, in SVG units — the outline is drawn sharp, rounding happens here. */

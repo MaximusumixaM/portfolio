@@ -123,6 +123,17 @@
   --font-display: "Aileron", Helvetica, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
+  /* Motion: a stroke drawing itself (set `pathLength="1"` and `stroke-dasharray="1"` on the path). */
+  --animate-trace: trace 0.6s ease-in-out both;
+  @keyframes trace {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
   /* Spacing */
   --spacing-xxs: 0.125rem; /* 2px */
   --spacing-xs: 0.25rem; /* 4px */

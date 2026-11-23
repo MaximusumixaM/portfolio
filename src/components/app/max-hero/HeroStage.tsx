@@ -3,8 +3,8 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { createFlexMaterial, type FlexMaterial } from "./flexMaterial";
+import { markHeroSceneReady } from "./heroSceneReady";
 import {
-  HERO_WORDMARK_HALF_HEIGHT_VAR,
   NAV_LOGO_CENTER_Y_PX,
   NAV_LOGO_HEIGHT_PX,
   PHASES,
@@ -14,6 +14,9 @@ import {
   CAMERA_DISTANCE,
   FORMATION_RING_RADIUS,
   FORMATION_SPHERE_RADIUS,
+  HERO_FIT_HEIGHT,
+  HERO_FIT_WIDTH,
+  HERO_WORDMARK_SCALE,
 } from "./sceneMetrics";
 import { usePointerRef } from "./usePointerRef";
 import { isWordmarkHovered } from "./wordmarkControl";
@@ -37,8 +40,6 @@ interface LetterItem {
 
 const FLOAT_SPEEDS = [0.62, 0.5, 0.7];
 const FLOAT_AMPS = [0.075, 0.055, 0.065];
-/** Overall on-screen size of the landing wordmark, on top of the responsive fit. */
-const WORDMARK_SCALE = 0.8;
 /** How much bigger the parked wordmark grows while hovered (or keyboard-focused). */
 const NAV_HOVER_GROW = 0.08;
 /** How quickly that grow comes and goes. */
@@ -94,20 +95,10 @@ export function HeroStage() {
 
   /** Landing size: fit the wordmark in the viewport with breathing room, capped at 1x. */
   const heroScale = useMemo(() => {
-    const byWidth = (viewport.width * 0.86) / wordmark.width;
-    const byHeight = (viewport.height * 0.7) / wordmark.height;
-    return Math.min(byWidth, byHeight, 1) * WORDMARK_SCALE;
+    const byWidth = (viewport.width * HERO_FIT_WIDTH) / wordmark.width;
+    const byHeight = (viewport.height * HERO_FIT_HEIGHT) / wordmark.height;
+    return Math.min(byWidth, byHeight, 1) * HERO_WORDMARK_SCALE;
   }, [viewport.width, viewport.height, wordmark.width, wordmark.height]);
-
-  // The hero's words sit above and below the wordmark (in the DOM); tell them how tall it is.
-  useEffect(() => {
-    const pixelToWorld = viewport.height / size.height;
-    const halfHeightPx = (heroScale * wordmark.height) / 2 / pixelToWorld;
-    document.documentElement.style.setProperty(
-      HERO_WORDMARK_HALF_HEIGHT_VAR,
-      `${String(halfHeightPx)}px`,
-    );
-  }, [heroScale, wordmark.height, viewport.height, size.height]);
 
   /** Size the label shrinks to so it sits inside the circle the arcs draw. */
   const faceScale = useMemo(
@@ -125,6 +116,8 @@ export function HeroStage() {
   }, [wordmark]);
 
   useFrame((state, delta) => {
+    // The first frame drawn: the outline standing in for the wordmark can go.
+    markHeroSceneReady();
     const reduced = reducedMotionRef.current;
     const progress = getSectionProgress("hero");
     const arcs = phase(progress, PHASES.arcs);

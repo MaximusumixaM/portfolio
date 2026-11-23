@@ -35,9 +35,6 @@ export const PHASES = {
 /** The hero's words fade (drifting in towards MAX) as it shrinks into the circle. */
 export const HERO_LINES_FADE: readonly [number, number] = [0, 0.12];
 
-/** CSS variable the canvas sets to the hero wordmark's on-screen half-height, for the words round it. */
-export const HERO_WORDMARK_HALF_HEIGHT_VAR = "--hero-wordmark-half-height";
-
 /** Where the portfolio's title comes up into view: the moment the globe starts its climb. */
 export const PORTFOLIO_RISE_AT = PHASES.dock[0];
 
