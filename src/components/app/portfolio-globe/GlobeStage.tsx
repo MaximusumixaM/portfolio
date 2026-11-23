@@ -42,11 +42,9 @@ import {
   DOCKED_AT,
   DOCK_HOVER_GROW_MS,
   DOCK_HOVER_RADIUS_PX,
-  DOCK_INSET_PX,
-  DOCK_RADIUS_PX,
-  DOCK_TOP_PX,
   PHASES,
-  dockRightPx,
+  dockMetrics,
+  headerLayoutFor,
 } from "@/components/app/max-hero/heroTransition";
 import {
   FORMATION_SPHERE_RADIUS,
@@ -256,17 +254,19 @@ export function GlobeStage({ cities, onAnchorMove }: GlobeStageProps) {
    */
   const dock = useMemo(() => {
     const pixelToWorld = viewport.height / size.height;
+    const metrics = dockMetrics(headerLayoutFor(size.width));
     const centreFor = (radiusPx: number) => ({
       x:
-        (size.width / 2 - dockRightPx(size.width) - DOCK_INSET_PX - radiusPx) *
+        (size.width / 2 - metrics.right - metrics.inset - radiusPx) *
         pixelToWorld,
       y:
-        (size.height / 2 - DOCK_TOP_PX - DOCK_INSET_PX - radiusPx) *
+        (size.height / 2 - metrics.top - metrics.inset - radiusPx) *
         pixelToWorld,
     });
-    const rest = centreFor(DOCK_RADIUS_PX);
+    const rest = centreFor(metrics.radius);
     return {
       pixelToWorld,
+      restRadiusPx: metrics.radius,
       centreFor,
       bendX: rest.x / 2 + rest.y * SWEEP_BEND,
       bendY: rest.y / 2 - rest.x * SWEEP_BEND,
@@ -343,7 +343,7 @@ export function GlobeStage({ cities, onAnchorMove }: GlobeStageProps) {
       delta,
     );
     const dockedRadiusPx = THREE.MathUtils.lerp(
-      DOCK_RADIUS_PX,
+      dock.restRadiusPx,
       DOCK_HOVER_RADIUS_PX,
       hover.current,
     );

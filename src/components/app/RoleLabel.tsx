@@ -46,7 +46,7 @@ export function RoleLabel({ startsHidden }: RoleLabelProps) {
     >
       <Helper
         ref={labelRef}
-        className="font-display text-large font-light tracking-widest text-foreground-default"
+        className="font-display text-medium font-light tracking-widest text-foreground-default md:text-large"
         style={startsHidden ? { opacity: 0 } : undefined}
       >
         UX designer

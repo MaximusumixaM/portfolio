@@ -11,9 +11,9 @@ import {
   DOCK_HOVER_GROW_DELAY_MS,
   DOCK_HOVER_GROW_MS,
   DOCK_HOVER_RADIUS_PX,
-  DOCK_ICON_SIZE_PX,
-  DOCK_INSET_PX,
-  DOCK_TOP_PX,
+  WIDE_HEADER_QUERY,
+  dockMetrics,
+  type DockMetrics,
 } from "@/components/app/max-hero/heroTransition";
 import {
   setGlobeHovered,
@@ -21,29 +21,28 @@ import {
 } from "@/components/app/portfolio-globe/globeControl";
 import { useGlobeDrag } from "@/components/app/portfolio-globe/useGlobeDrag";
 import { useSectionPast } from "@/components/app/scroll/timeline";
+import { useMediaQuery } from "@/components/lib/useMediaQuery";
 import { cn } from "@/components/lib/utils";
 import { Button } from "@/components/peduncle/Button";
 
 /** Gap between the "about" label and the icon (or the grown globe), in CSS pixels: `s`. */
 const LABEL_GAP_PX = 8;
-/** Half the label's height at its hovered size (a `text-xl` line). */
-const LABEL_HALF_HEIGHT_PX = 12;
+/** Half the label's height at its hovered size (a `text-large` line on phones, `text-xl` wider). */
+const LABEL_HALF_HEIGHT_PX = { compact: 11, wide: 12 };
 
 /**
  * How far the label slides left while hovered, to stay beside the grown globe: from beside the icon
  * to clear of the globe's edge where the label's lower edge meets it.
  */
-const LABEL_HOVER_SHIFT_PX = (() => {
+function labelHoverShiftPx(dock: DockMetrics, labelHalfHeight: number): number {
   const centreBelowLabelEdge =
-    DOCK_INSET_PX +
-    DOCK_HOVER_RADIUS_PX -
-    (DOCK_ICON_SIZE_PX / 2 + LABEL_HALF_HEIGHT_PX);
+    dock.inset + DOCK_HOVER_RADIUS_PX - (dock.iconSize / 2 + labelHalfHeight);
   const globeReach =
-    DOCK_INSET_PX +
+    dock.inset +
     DOCK_HOVER_RADIUS_PX +
     Math.sqrt(DOCK_HOVER_RADIUS_PX ** 2 - centreBelowLabelEdge ** 2);
-  return globeReach - (DOCK_ICON_SIZE_PX + LABEL_GAP_PX) + LABEL_GAP_PX;
-})();
+  return globeReach - (dock.iconSize + LABEL_GAP_PX) + LABEL_GAP_PX;
+}
 
 /** Marks the About layers, so closing About knows focus was in there and brings it back here. */
 export const ABOUT_LAYER_ATTRIBUTE = "data-about-layer";
@@ -58,6 +57,8 @@ export function AboutLink() {
   const isAboutOpen = useIsAboutOpen();
   const isLive = isDocked && !isAboutOpen;
   const isResting = useIsGlobeResting();
+  const layout = useMediaQuery(WIDE_HEADER_QUERY) ? "wide" : "compact";
+  const dock = dockMetrics(layout);
   const linkRef = useRef<HTMLAnchorElement>(null);
   const drag = useGlobeDrag(isLive);
 
@@ -95,16 +96,16 @@ export function AboutLink() {
       variant="ghost"
       className={cn(
         // `touch-none` keeps a drag on the globe from scrolling the page underneath.
-        // The header's side margin, as `dockRightPx` places the globe: `m`, then `l` from tablets.
+        // The header's side margin, as `dockMetrics` places the globe: `m`, then `l` from tablets.
         "group fixed right-m z-30 touch-none select-none rounded-round p-0 md:right-l focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus",
         // Hidden takes it out of the tab order too, while there's no docked globe to land on.
         !isDocked && "invisible",
         isAboutOpen && "pointer-events-none",
       )}
       style={{
-        top: `${String(DOCK_TOP_PX)}px`,
-        width: `${String(DOCK_ICON_SIZE_PX)}px`,
-        height: `${String(DOCK_ICON_SIZE_PX)}px`,
+        top: `${String(dock.top)}px`,
+        width: `${String(dock.iconSize)}px`,
+        height: `${String(dock.iconSize)}px`,
       }}
     >
       <a
@@ -148,8 +149,8 @@ export function AboutLink() {
           aria-hidden="true"
           className="absolute hidden rounded-round pointer-fine:group-hover:block"
           style={{
-            top: `${String(DOCK_INSET_PX)}px`,
-            right: `${String(DOCK_INSET_PX)}px`,
+            top: `${String(dock.inset)}px`,
+            right: `${String(dock.inset)}px`,
             width: `${String(DOCK_HOVER_RADIUS_PX * 2)}px`,
             height: `${String(DOCK_HOVER_RADIUS_PX * 2)}px`,
           }}
@@ -162,12 +163,12 @@ export function AboutLink() {
             marginRight: `${String(LABEL_GAP_PX)}px`,
             clipPath: isDocked ? "inset(0)" : "inset(0 0 0 100%)",
             // Moves aside in step with the globe: after the same wait, over the same slow grow.
-            "--label-shift": `${String(LABEL_HOVER_SHIFT_PX)}px`,
+            "--label-shift": `${String(labelHoverShiftPx(dock, LABEL_HALF_HEIGHT_PX[layout]))}px`,
             "--grow-delay": `${String(DOCK_HOVER_GROW_DELAY_MS)}ms`,
             "--grow-duration": `${String(DOCK_HOVER_GROW_MS)}ms`,
           }}
         >
-          <span className="font-display text-large font-light tracking-widest text-foreground-secondary transition-[color,font-size,line-height] duration-300 group-hover:text-xl group-hover:text-foreground-default group-focus-visible:text-xl group-focus-visible:text-foreground-default">
+          <span className="font-display text-medium font-light tracking-widest text-foreground-secondary transition-[color,font-size,line-height] duration-300 group-hover:text-large group-hover:text-foreground-default group-focus-visible:text-large group-focus-visible:text-foreground-default md:text-large md:group-hover:text-xl md:group-focus-visible:text-xl">
             about
           </span>
         </span>
