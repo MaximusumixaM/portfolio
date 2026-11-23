@@ -48,6 +48,10 @@ const NAV_HOVER_DAMPING = 10;
 const FACE_FILL = 0.82;
 /** Peak tilt (radians) mid-rise, showing the letters' thickness on the way to the nav. */
 const TILT_MAX = 0.55;
+/** How quickly the cursor's touch on the letters follows it (a little lag reads as give). */
+const TOUCH_FOLLOW_DAMPING = 12;
+/** How quickly the touch comes on as the cursor arrives, and eases off as it leaves. */
+const TOUCH_STRENGTH_DAMPING = 6;
 /** Clearance between the globe's surface and the letters floating in front of it. */
 const FRONT_CLEARANCE = 0.05;
 // The living material rigidifies as the globe takes over the circle, settled by the time it leaves.
@@ -65,6 +69,18 @@ export function HeroStage() {
   const viewport = useThree((state) => state.viewport);
   const size = useThree((state) => state.size);
   const pointer = usePointerRef();
+  /** Casts from the camera through the cursor, to find where it sits over each letter. */
+  const touch = useMemo(
+    () => ({
+      raycaster: new THREE.Raycaster(),
+      cursor: new THREE.Vector2(),
+      plane: new THREE.Plane(new THREE.Vector3(0, 0, 1), 0),
+      centre: new THREE.Vector3(),
+      hit: new THREE.Vector3(),
+    }),
+    [],
+  );
+  const touchStrength = useRef(0);
 
   const prefersReducedMotion = usePrefersReducedMotion();
   const reducedMotionRef = useRef(prefersReducedMotion);
@@ -127,6 +143,17 @@ export function HeroStage() {
     // Idle life fades out as the circle closes, not as the whole settle completes.
     const liveliness = reduced ? 0 : 1 - arcs;
 
+    // The cursor's touch: only while a mouse is over the page, and only in the idle hero.
+    touchStrength.current = THREE.MathUtils.damp(
+      touchStrength.current,
+      pointer.current.isHovering ? liveliness : 0,
+      TOUCH_STRENGTH_DAMPING,
+      delta,
+    );
+    touch.cursor.set(pointer.current.x, pointer.current.y);
+    touch.raycaster.setFromCamera(touch.cursor, state.camera);
+    const touchFollow = 1 - Math.exp(-TOUCH_FOLLOW_DAMPING * delta);
+
     for (const item of items) {
       const uniforms = item.material.userData.flexUniforms;
       uniforms.uTime.value = time;
@@ -149,6 +176,16 @@ export function HeroStage() {
         liveliness;
       // Hero depth-layering collapses as the circle closes, so no letter sinks behind the globe.
       mesh.position.z = item.letter.position[2] * (1 - arcs);
+
+      // Where the cursor sits over this letter (on a plane through it, facing the camera), in the
+      // letter's own space, for its shader to distort the surface round.
+      uniforms.uPointerStrength.value = touchStrength.current;
+      mesh.getWorldPosition(touch.centre);
+      touch.plane.constant = -touch.centre.z;
+      if (touch.raycaster.ray.intersectPlane(touch.plane, touch.hit) !== null) {
+        mesh.worldToLocal(touch.hit);
+        uniforms.uPointer.value.lerp(touch.hit, touchFollow);
+      }
     }
 
     // Shrink the label into the circle.

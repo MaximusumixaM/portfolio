@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-// MeshPhysicalMaterial extended via onBeforeCompile: simplex-noise vertex flex, flat-shaded facets, drifting gradient. Drive by advancing uniforms.uTime.
+// MeshPhysicalMaterial extended via onBeforeCompile: simplex-noise vertex flex, a cursor-local distortion, flat-shaded facets, drifting gradient. Drive by advancing uniforms.uTime (and uPointer).
 export interface FlexUniforms {
   uTime: { value: number };
   uSeed: { value: number };
@@ -8,7 +8,17 @@ export interface FlexUniforms {
   uNoiseScale: { value: number };
   /** 0 = full living hero material, 1 = flat settled logo (see heroTransition). */
   uFlatten: { value: number };
+  /** Where the cursor sits over this letter, in the letter's own (geometry) space. */
+  uPointer: { value: THREE.Vector2 };
+  /** 0–1: how much the cursor's touch distorts the surface round it. */
+  uPointerStrength: { value: number };
 }
+
+/** How far round the cursor its touch reaches (geometry units; the wordmark is 3.4 tall). */
+const TOUCH_REACH = "0.55";
+/** How far the touched surface swells away from the cursor, in-plane, and lifts toward the viewer. */
+const TOUCH_SWELL = "0.22";
+const TOUCH_LIFT = "0.35";
 
 export interface FlexMaterial extends THREE.MeshPhysicalMaterial {
   userData: { flexUniforms: FlexUniforms };
@@ -78,6 +88,8 @@ uniform float uSeed;
 uniform float uAmplitude;
 uniform float uNoiseScale;
 uniform float uFlatten;
+uniform vec2 uPointer;
+uniform float uPointerStrength;
 varying float vFlexNoise;
 varying vec3 vFlexObjPos;
 ${SIMPLEX_3D}
@@ -93,6 +105,12 @@ vec3 flexOffset = vec3(
 );
 flexOffset.z *= 0.55; // keep the breathing mostly in-plane so depth layering stays crisp
 transformed += flexOffset * uAmplitude * (1.0 - uFlatten); // settles rigid as it becomes the logo
+// The cursor's touch: within reach of it the surface swells out of the way and lifts toward the
+// viewer, with a slight wobble. Also a function of position only, so it can't crack edges either.
+vec2 fromPointer = position.xy - uPointer;
+float touch = exp(-dot(fromPointer, fromPointer) / (${TOUCH_REACH} * ${TOUCH_REACH})) * uPointerStrength;
+vec2 awayFromPointer = fromPointer / (length(fromPointer) + 0.0001);
+transformed += vec3(awayFromPointer * ${TOUCH_SWELL}, ${TOUCH_LIFT}) * touch * (1.0 + 0.12 * sin(uTime * 5.0));
 vFlexNoise = flexOffset.x;
 vFlexObjPos = position;
 `;
@@ -124,6 +142,8 @@ export function createFlexMaterial(seed: number): FlexMaterial {
     uAmplitude: { value: 0.055 },
     uNoiseScale: { value: 0.95 },
     uFlatten: { value: 0 },
+    uPointer: { value: new THREE.Vector2(1e3, 1e3) },
+    uPointerStrength: { value: 0 },
   };
 
   const material = new THREE.MeshPhysicalMaterial({
