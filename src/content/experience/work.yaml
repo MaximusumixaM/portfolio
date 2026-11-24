@@ -1,0 +1,21 @@
+# Placeholder roles until the real history (Q6). Newest first.
+- id: boston
+  role: Lorem ipsum
+  organisation: Dolor sit amet
+  place: Boston, USA
+  years: 20XX – now
+- id: schwabisch-gmund
+  role: Consectetur adipiscing
+  organisation: Sed do eiusmod
+  place: Schwäbisch Gmünd, Germany
+  years: 20XX – 20XX
+- id: stockholm
+  role: Tempor incididunt
+  organisation: Ut labore et dolore
+  place: Stockholm, Sweden
+  years: 20XX – 20XX
+- id: vancouver
+  role: Magna aliqua
+  organisation: Ut enim ad minim
+  place: Vancouver, Canada
+  years: 20XX – 20XX

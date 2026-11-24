@@ -1,15 +1,22 @@
 ---
 import { SiteExperience } from "../components/app/SiteExperience";
 import { loadChapters } from "../data/chapters";
+import { loadExperience } from "../data/experience";
 import { loadProjects } from "../data/projects";
 import Layout from "../layouts/Layout.astro";
 
-const [chapters, projects] = await Promise.all([
+const [chapters, projects, experience] = await Promise.all([
   loadChapters(),
   loadProjects(),
+  loadExperience(),
 ]);
 ---
 
 <Layout>
-  <SiteExperience client:load chapters={chapters} projects={projects} />
+  <SiteExperience
+    client:load
+    chapters={chapters}
+    projects={projects}
+    experience={experience}
+  />
 </Layout>

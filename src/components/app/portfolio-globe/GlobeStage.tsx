@@ -31,6 +31,7 @@ import {
 } from "./outlineReveal";
 
 import {
+  getAboutSlide,
   getAboutMarks,
   getAboutProgress,
   getActiveChapter,
@@ -273,7 +274,10 @@ export function GlobeStage({ cities, onAnchorMove }: GlobeStageProps) {
     };
   }, [size.width, size.height, viewport.height]);
 
-  /** Where it sits on the About page: its left half beside the content, its top when stacked. */
+  /**
+   * Where it sits on the About page: its left half beside the content, its top when stacked. (It
+   * rides in the story's slide, so the row moving along carries it off a screen's width a slide.)
+   */
   const aboutLayout = useMemo(() => {
     if (size.width < STACKED_BREAKPOINT_PX) {
       return {
@@ -373,8 +377,14 @@ export function GlobeStage({ cities, onAnchorMove }: GlobeStageProps) {
       hover.current < HOVER_SETTLED;
     placement.visible = !isResting;
     setGlobeResting(isResting);
+    // It rides in the story's slide, so it moves with the row of sections: a screen per slide.
+    const slide = getAboutSlide();
     placement.position.set(
-      THREE.MathUtils.lerp(heroX, aboutLayout.x, about),
+      THREE.MathUtils.lerp(
+        heroX,
+        aboutLayout.x - viewport.width * slide,
+        about,
+      ),
       THREE.MathUtils.lerp(heroY, aboutLayout.y, about),
       0,
     );

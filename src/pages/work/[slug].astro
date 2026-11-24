@@ -3,6 +3,7 @@ import type { GetStaticPaths } from "astro";
 
 import { SiteExperience } from "../../components/app/SiteExperience";
 import { loadChapters } from "../../data/chapters";
+import { loadExperience } from "../../data/experience";
 import { loadProjects } from "../../data/projects";
 import Layout from "../../layouts/Layout.astro";
 
@@ -12,9 +13,10 @@ export const getStaticPaths = (async () => {
 }) satisfies GetStaticPaths;
 
 const { slug } = Astro.params;
-const [chapters, projects] = await Promise.all([
+const [chapters, projects, experience] = await Promise.all([
   loadChapters(),
   loadProjects(),
+  loadExperience(),
 ]);
 const project = projects.find(({ id }) => id === slug);
 if (project === undefined) {
@@ -31,6 +33,7 @@ if (project === undefined) {
     client:load
     chapters={chapters}
     projects={projects}
+    experience={experience}
     initialView={{ kind: "project", projectId: project.id }}
   />
 </Layout>

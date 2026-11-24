@@ -12,6 +12,7 @@ import {
 
 import { usePrefersReducedMotion } from "@/components/lib/usePrefersReducedMotion";
 import { cn } from "@/components/lib/utils";
+import { Badge } from "@/components/peduncle/Badge";
 import { Button } from "@/components/peduncle/Button";
 import { BodyText, Heading, Helper } from "@/components/peduncle/Typography";
 
@@ -207,9 +208,7 @@ export function ProjectPage({
           <ul aria-label="Tags" className="flex flex-wrap gap-xs">
             {project.tags.map((tag) => (
               <li key={tag}>
-                <Helper className="rounded-round bg-background-secondary px-s text-small text-foreground-secondary">
-                  {tag}
-                </Helper>
+                <Badge size="sm">{tag}</Badge>
               </li>
             ))}
           </ul>

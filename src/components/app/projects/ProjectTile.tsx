@@ -2,7 +2,8 @@ import { projectTileId, type Project } from "./project";
 import { enterProject, isPlainClick, projectPath } from "./projectRoute";
 
 import { cn } from "@/components/lib/utils";
-import { BodyText, Heading, Helper } from "@/components/peduncle/Typography";
+import { Badge } from "@/components/peduncle/Badge";
+import { BodyText, Heading } from "@/components/peduncle/Typography";
 
 export interface ProjectTileProps {
   project: Project;
@@ -47,9 +48,7 @@ export function ProjectTile({ project }: ProjectTileProps) {
           <ul aria-label="Tags" className="flex flex-wrap gap-xs">
             {project.tags.map((tag) => (
               <li key={tag}>
-                <Helper className="rounded-round bg-background-secondary px-s text-small text-foreground-secondary">
-                  {tag}
-                </Helper>
+                <Badge size="sm">{tag}</Badge>
               </li>
             ))}
           </ul>

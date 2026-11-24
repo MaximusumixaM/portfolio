@@ -2,9 +2,13 @@ import { useEffect } from "react";
 
 import {
   closeAbout,
+  isAboutSection,
   openAbout,
   showAboutImmediately,
+  showAboutSection,
+  useAboutSection,
   useIsAboutOpen,
+  type AboutSection,
 } from "./aboutView";
 
 import {
@@ -14,6 +18,13 @@ import {
 import type { SiteView } from "@/components/app/siteView";
 
 const ABOUT_PATH = "/about";
+/** `/about` (the story) or `/about/<section>`. */
+const ABOUT_PATH_PATTERN = /^\/about(?:\/([^/]+))?\/?$/;
+
+/** The story is About's own URL; each other section has `/about/<section>`. */
+export function aboutPath(section: AboutSection): string {
+  return section === "story" ? ABOUT_PATH : `${ABOUT_PATH}/${section}`;
+}
 
 /** What we stamp on the history entry we push for About, so leaving can step back over it. */
 interface AboutEntry {
@@ -29,13 +40,17 @@ function isAboutEntry(state: unknown): state is AboutEntry {
   );
 }
 
-function isAboutPath(): boolean {
-  return window.location.pathname.replace(/\/$/, "") === ABOUT_PATH;
+/** The section the current URL is for, if it's an About URL (an unknown section reads as the story). */
+function findPathSection(): AboutSection | undefined {
+  const match = ABOUT_PATH_PATTERN.exec(window.location.pathname);
+  if (match === null) return undefined;
+  const section = match[1];
+  return section !== undefined && isAboutSection(section) ? section : "story";
 }
 
 /** Opens About and gives it its own URL (and a history entry, so browser back closes it). */
 export function enterAbout(): void {
-  if (!isAboutPath()) {
+  if (findPathSection() === undefined) {
     window.history.pushState(
       { view: "about" } satisfies AboutEntry,
       "",
@@ -58,28 +73,44 @@ export function leaveAbout(): void {
 }
 
 /**
- * Keeps About and the URL in step: lands on About for a page loaded at /about, follows the
- * browser's back/forward, holds the page still while About is open, and closes it on Escape.
+ * Keeps About and the URL in step: lands on About (at its section) for a page loaded at an About
+ * URL, gives each section its URL as the tabs change (replacing, so back still leaves About),
+ * follows the browser's back/forward, holds the page still while About is open, and closes it on
+ * Escape.
  */
 export function useAboutRoute(initialView: SiteView): void {
   const isOpen = useIsAboutOpen();
-  const startsOnAbout = initialView.kind === "about";
+  const section = useAboutSection();
+  const initialSection =
+    initialView.kind === "about" ? initialView.section : undefined;
 
   useEffect(() => {
-    if (startsOnAbout) {
+    if (initialSection !== undefined) {
       // Behind About, the portfolio waits at its start, the hero played out.
       jumpToSectionEnd("hero");
-      showAboutImmediately();
+      showAboutImmediately(initialSection);
     }
     function handlePopState() {
-      if (isAboutPath()) openAbout();
-      else closeAbout();
+      const pathSection = findPathSection();
+      if (pathSection === undefined) {
+        closeAbout();
+        return;
+      }
+      openAbout();
+      showAboutSection(pathSection);
     }
     window.addEventListener("popstate", handlePopState);
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [startsOnAbout]);
+  }, [initialSection]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const path = aboutPath(section);
+    if (window.location.pathname.replace(/\/$/, "") === path) return;
+    window.history.replaceState(window.history.state, "", path);
+  }, [isOpen, section]);
 
   useEffect(() => {
     setScrollLocked(isOpen);

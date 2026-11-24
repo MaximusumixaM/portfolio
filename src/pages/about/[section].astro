@@ -1,0 +1,44 @@
+---
+import type { GetStaticPaths } from "astro";
+
+import {
+  ABOUT_SECTIONS,
+  isAboutSection,
+} from "../../components/app/about/aboutView";
+import { SiteExperience } from "../../components/app/SiteExperience";
+import { loadChapters } from "../../data/chapters";
+import { loadExperience } from "../../data/experience";
+import { loadProjects } from "../../data/projects";
+import Layout from "../../layouts/Layout.astro";
+
+// Each About section but the story (which is /about itself) at its own URL, opening straight on it.
+export const getStaticPaths = (() =>
+  ABOUT_SECTIONS.filter((section) => section !== "story").map((section) => ({
+    params: { section },
+  }))) satisfies GetStaticPaths;
+
+const { section } = Astro.params;
+if (section === undefined || !isAboutSection(section)) {
+  throw new Error(`Expected an About section for /about/${String(section)}`);
+}
+const [chapters, projects, experience] = await Promise.all([
+  loadChapters(),
+  loadProjects(),
+  loadExperience(),
+]);
+const title = `${section.charAt(0).toUpperCase()}${section.slice(1)}`;
+---
+
+<Layout title={`${title} - Max Nobell-Cluff`}>
+  <!-- As on /about: a refresh's scroll restoration would otherwise undo parking the portfolio. -->
+  <script is:inline slot="head">
+    history.scrollRestoration = "manual";
+  </script>
+  <SiteExperience
+    client:load
+    chapters={chapters}
+    projects={projects}
+    experience={experience}
+    initialView={{ kind: "about", section }}
+  />
+</Layout>

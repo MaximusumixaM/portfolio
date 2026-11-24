@@ -1,4 +1,4 @@
-import { glob } from "astro/loaders";
+import { file, glob } from "astro/loaders";
 import { z } from "astro/zod";
 import { defineCollection } from "astro:content";
 
@@ -29,6 +29,45 @@ const chapters = defineCollection({
   }),
 });
 
+// The Experience tab: work, awards and skills, each a list in one file, kept in file order.
+const work = defineCollection({
+  loader: file("src/content/experience/work.yaml"),
+  schema: z.object({
+    role: z.string(),
+    organisation: z.string(),
+    place: z.string(),
+    /** As shown, e.g. "2019 – 2021". */
+    years: z.string(),
+  }),
+});
+
+const awards = defineCollection({
+  loader: file("src/content/experience/awards.yaml"),
+  schema: z.object({
+    title: z.string(),
+    issuer: z.string(),
+    description: z.string(),
+    /** As shown, e.g. "June 2015". */
+    date: z.string(),
+  }),
+});
+
+const skills = defineCollection({
+  loader: file("src/content/experience/skills.yaml"),
+  schema: z.object({
+    name: z.string(),
+    /** The subsection it's listed under (e.g. "Design", "Video production"), in file order. */
+    group: z.string(),
+    /** A logo, as a path under `public/` (e.g. "/skills/figma.svg"). */
+    icon: z.string().optional(),
+    /** The tool's own colour (a hex), washed faintly into its badge. */
+    tint: z
+      .string()
+      .regex(/^#[0-9a-f]{6}$/i)
+      .optional(),
+  }),
+});
+
 // The selected work, one file per project; `order` sets its place in the grid.
 const projects = defineCollection({
   loader: glob({ pattern: "*.yaml", base: "./src/content/projects" }),
@@ -46,4 +85,4 @@ const projects = defineCollection({
   }),
 });
 
-export const collections = { chapters, projects };
+export const collections = { chapters, projects, work, awards, skills };

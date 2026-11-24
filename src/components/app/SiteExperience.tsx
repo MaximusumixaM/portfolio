@@ -15,6 +15,7 @@ import {
   useIsAboutOpen,
 } from "@/components/app/about/aboutView";
 import type { Chapters } from "@/components/app/about/chapter";
+import type { Experience } from "@/components/app/about/experience";
 import { useLeaderLine } from "@/components/app/about/useLeaderLine";
 import { AboutLink } from "@/components/app/AboutLink";
 import { HeaderBackdrop } from "@/components/app/HeaderBackdrop";
@@ -41,6 +42,8 @@ export interface SiteExperienceProps {
   chapters: Chapters;
   /** The selected work, in grid order. */
   projects: readonly Project[];
+  /** About's Experience tab: work, awards and skills. */
+  experience: Experience;
   /** For a page loaded at /about or a project's URL: it opens straight onto that view. */
   initialView?: SiteView;
 }
@@ -51,6 +54,7 @@ export interface SiteExperienceProps {
 export function SiteExperience({
   chapters,
   projects,
+  experience,
   initialView = PORTFOLIO_VIEW,
 }: SiteExperienceProps) {
   const { overlayRef, labelRef, lineRef, cityDotRef, drawFrom } =
@@ -110,7 +114,11 @@ export function SiteExperience({
         </main>
         <AboutPanel
           startsOpen={startsOnAbout}
+          initialSection={
+            initialView.kind === "about" ? initialView.section : "story"
+          }
           chapters={chapters}
+          experience={experience}
           titleRef={labelRef}
         />
 

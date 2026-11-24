@@ -1,12 +1,14 @@
 ---
-import { SiteExperience } from "../components/app/SiteExperience";
-import { loadChapters } from "../data/chapters";
-import { loadProjects } from "../data/projects";
-import Layout from "../layouts/Layout.astro";
+import { SiteExperience } from "../../components/app/SiteExperience";
+import { loadChapters } from "../../data/chapters";
+import { loadExperience } from "../../data/experience";
+import { loadProjects } from "../../data/projects";
+import Layout from "../../layouts/Layout.astro";
 
-const [chapters, projects] = await Promise.all([
+const [chapters, projects, experience] = await Promise.all([
   loadChapters(),
   loadProjects(),
+  loadExperience(),
 ]);
 ---
 
@@ -20,6 +22,7 @@ const [chapters, projects] = await Promise.all([
     client:load
     chapters={chapters}
     projects={projects}
-    initialView={{ kind: "about" }}
+    experience={experience}
+    initialView={{ kind: "about", section: "story" }}
   />
 </Layout>

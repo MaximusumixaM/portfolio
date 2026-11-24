@@ -1,0 +1,20 @@
+# Placeholder skills until the real list (Q6). Grouped into subsections by `group` (in file order).
+# Optional per skill: `icon: /skills/figma.svg` (a file in public/) and `tint: "#a259ff"`.
+- id: lorem
+  name: Lorem ipsum
+  group: Lorem ipsum
+- id: dolor
+  name: Dolor sit
+  group: Lorem ipsum
+- id: amet
+  name: Amet consectetur
+  group: Lorem ipsum
+- id: adipiscing
+  name: Adipiscing
+  group: Lorem ipsum
+- id: elit
+  name: Elit sed
+  group: Dolor sit amet
+- id: eiusmod
+  name: Eiusmod tempor
+  group: Dolor sit amet
